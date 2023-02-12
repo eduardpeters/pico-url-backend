@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import { User, validateUser } from '../models/user';
 
 async function registerUser(req: Request, res: Response) {
@@ -11,10 +12,11 @@ async function registerUser(req: Request, res: Response) {
     if (user) {
         return res.status(400).send('User already exists');
     }
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
     user = new User({
         name: req.body.name,
         email: req.body.email,
-        password: req.body.password
+        password: hashedPassword
     });
     try {
         await user.save();
