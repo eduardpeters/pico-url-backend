@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import usersRoute from './routes/users';
 import authRoute from './routes/auth';
+import verifyJWT from './middleware/verifyJWT';
 
 dotenv.config();
 
@@ -19,6 +20,9 @@ app.get('/', (req: Request, res: Response) => {
 app.use(express.json());
 app.use('/api/users', usersRoute);
 app.use('/api/auth', authRoute);
+app.get('/check', verifyJWT, (req: Request, res: Response) => {
+    res.status(200).send((req as Request & {user: {_id: string}}).user);
+});
 
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
