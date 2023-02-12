@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Joi from 'joi';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { User } from '../models/user';
 
 async function authorizeUser(req: Request, res: Response) {
@@ -16,7 +17,13 @@ async function authorizeUser(req: Request, res: Response) {
     if (!validPassword) {
         return res.status(400).send('Incorrect email or password');
     }
-    return res.status(200).send(true);
+    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET as string, { expiresIn: 3600 });
+    return res.status(200).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email, 
+        token: token
+    });
 }
 
 function validateAuthBody(body: { email: string, password: string }) {
