@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import mongoose from 'mongoose';
+import { UserInterface } from '../types/picotypes';
 
 export const User = mongoose.model('User', new mongoose.Schema({
     name: {
@@ -23,7 +24,7 @@ export const User = mongoose.model('User', new mongoose.Schema({
     }
 }));
 
-export function validateUser(user: any) {
+export function validateUser(user: UserInterface) {
     const schema = Joi.object({
         name: Joi.string().min(5).max(50).required(),
         email: Joi.string().min(5).max(255).required().email(),

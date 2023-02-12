@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { User, validateUser } from '../models/user';
 
 async function registerUser(req: Request, res: Response) {
-    const { error, value } = validateUser(req.body);
+    const { error } = validateUser(req.body);
     if (error) {
         console.log(error);
         return res.status(400).send(error.details[0].message);

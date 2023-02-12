@@ -2,7 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import usersRoute from './routes/users';
-import exp from 'constants';
+import authRoute from './routes/auth';
 
 dotenv.config();
 
@@ -18,6 +18,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 app.use(express.json());
 app.use('/api/users', usersRoute);
+app.use('/api/auth', authRoute);
 
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
