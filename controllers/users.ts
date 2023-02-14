@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import Joi from 'joi';
 import { User, validateUser } from '../models/user';
 import { RequestUser, UserInterface } from '../types/picotypes';
 
@@ -56,4 +57,42 @@ async function deleteUser(req: Request, res: Response) {
     }
 }
 
-export default { registerUser, getUser, deleteUser };
+async function updateUser(req: Request, res: Response) {
+    const { error } = validateUpdateBody(req.body);
+    if (error) {
+        console.log(error);
+        return res.status(400).send(error.details[0].message);
+    }
+    try {
+        const updatedUser: { name?: string, email?: string } = {};
+        if (req.body.name) {
+            updatedUser.name = req.body.name;
+        }
+        if (req.body.email) {
+            updatedUser.email = req.body.email;
+        }
+        const result = await User.findByIdAndUpdate((req as Request & RequestUser).user._id, updatedUser, { returnDocument: "after" });
+        if (!result) {
+            return res.status(404).send('User not found');
+        }
+        const userInfo = {
+            _id: result._id,
+            name: result.name,
+            email: result.email,
+        }
+        res.status(200).json(userInfo);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Database error');
+    }
+}
+
+function validateUpdateBody(body: { name: string, email: string }) {
+    const schema = Joi.object({
+        name: Joi.string().min(5).max(50),
+        email: Joi.string().min(5).max(255).email(),
+    }).min(1);
+    return schema.validate(body);
+}
+
+export default { registerUser, getUser, deleteUser, updateUser };
