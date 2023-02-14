@@ -46,4 +46,14 @@ async function getUser(req: Request, res: Response) {
     return res.status(200).json(userInfo);
 }
 
-export default { registerUser, getUser };
+async function deleteUser(req: Request, res: Response) {
+    try {
+        await User.deleteOne({ _id: (req as Request & RequestUser).user._id });
+        return res.status(204).send();
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Database error');
+    }
+}
+
+export default { registerUser, getUser, deleteUser };
