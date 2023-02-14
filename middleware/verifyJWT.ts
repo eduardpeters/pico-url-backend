@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongoose';
-
-interface ReqUser {
-    _id: ObjectId
-}
+import { RequestUser } from '../types/picotypes';
 
 function verifyJWT(req: Request, res: Response, next: NextFunction) {
     const token = req.headers.authorization?.split(' ')[1];
@@ -13,7 +10,7 @@ function verifyJWT(req: Request, res: Response, next: NextFunction) {
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-        (req as Request & {user: ReqUser}).user = (decoded as ReqUser);
+        (req as Request & RequestUser).user = (decoded as {_id: ObjectId});
         next();
     } catch (error) {
         console.log(error);

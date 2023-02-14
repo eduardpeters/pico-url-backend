@@ -6,3 +6,9 @@ export interface UserInterface {
     email: string,
     password: string
 }
+
+export interface RequestUser {
+    user: {
+        _id: ObjectId
+    }
+}
