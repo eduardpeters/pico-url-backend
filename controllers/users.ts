@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import Joi from 'joi';
-import { User, validateUser } from '../models/user';
+import User from '../models/user';
+import { validateUser, validateUpdateBody } from '../helpers/validation';
 import { RequestUser, UserInterface } from '../types/picotypes';
 
 async function registerUser(req: Request, res: Response) {
@@ -87,12 +87,6 @@ async function updateUser(req: Request, res: Response) {
     }
 }
 
-function validateUpdateBody(body: { name: string, email: string }) {
-    const schema = Joi.object({
-        name: Joi.string().min(5).max(50),
-        email: Joi.string().min(5).max(255).email(),
-    }).min(1);
-    return schema.validate(body);
-}
+
 
 export default { registerUser, getUser, deleteUser, updateUser };

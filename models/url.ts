@@ -1,8 +1,6 @@
-import Joi from 'joi';
 import mongoose from 'mongoose';
-import { UserInterface } from '../types/picotypes';
 
-export const Url = mongoose.model('Url', new mongoose.Schema({
+const Url = mongoose.model('Url', new mongoose.Schema({
     userId: {
         type: mongoose.SchemaTypes.ObjectId,
         required: true,
@@ -28,9 +26,4 @@ export const Url = mongoose.model('Url', new mongoose.Schema({
     }
 }));
 
-export function validateUrl(url: { url: string }) {
-    const schema = Joi.object({
-        url: Joi.string().uri().required(),
-    });
-    return schema.validate(url);
-};
+export default Url;

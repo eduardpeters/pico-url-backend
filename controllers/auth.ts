@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import Joi from 'joi';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/user';
+import User from '../models/user';
+import { validateAuthBody } from '../helpers/validation';
 
 async function authorizeUser(req: Request, res: Response) {
     const { error } = validateAuthBody(req.body);
@@ -24,14 +24,6 @@ async function authorizeUser(req: Request, res: Response) {
         email: user.email, 
         token: token
     });
-}
-
-function validateAuthBody(body: { email: string, password: string }) {
-    const schema = Joi.object({
-        email: Joi.string().min(5).max(255).required().email(),
-        password: Joi.string().min(5).max(255).required()
-    });
-    return schema.validate(body);
 }
 
 export default { authorizeUser }
