@@ -87,6 +87,4 @@ async function updateUser(req: Request, res: Response) {
     }
 }
 
-
-
 export default { registerUser, getUser, deleteUser, updateUser };
