@@ -1,6 +1,6 @@
 import express from 'express';
-import urlsController from '../controllers/urls';
-import verifyJWT from '../middleware/verifyJWT';
+import urlsController from '../controllers/urls.js';
+import verifyJWT from '../middleware/verifyJWT.js';
 const router = express.Router();
 
 router.get('/:shorturl', urlsController.redirectUrl);

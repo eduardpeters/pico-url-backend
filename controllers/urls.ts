@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import { validateUrl } from '../helpers/validation';
-import Url from '../models/url';
+import { nanoid } from 'nanoid';
+import { validateUrl } from '../helpers/validation.js';
+import Url from '../models/url.js';
 import { RequestUser } from '../types/picotypes';
 
 async function getAllUrls(req: Request, res: Response) {
@@ -29,12 +30,13 @@ async function createUrl(req: Request, res: Response) {
     }
     let url = await Url.findOne({ originalUrl: req.body.url });
     if (url) {
-        return res.status(200).json({ shortUrl: url.shortUrl });
+        return res.status(200).json(url);
     }
+    const shortId = nanoid(10);
     url = new Url({
         userId: (req as Request & RequestUser).user._id,
         originalUrl: req.body.url,
-        shortUrl: "aBcDE01234",
+        shortUrl: `${process.env.URL_BASE}/${shortId}`,
     });
     try {
         await url.save();

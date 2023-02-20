@@ -1,10 +1,10 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import usersRoute from './routes/users';
-import urlsRoute from './routes/urls';
-import authRoute from './routes/auth';
-import verifyJWT from './middleware/verifyJWT';
+import usersRoute from './routes/users.js';
+import urlsRoute from './routes/urls.js';
+import authRoute from './routes/auth.js';
+import verifyJWT from './middleware/verifyJWT.js';
 
 dotenv.config();
 

@@ -1,6 +1,6 @@
 import express from 'express';
-import usersController from '../controllers/users';
-import verifyJWT from '../middleware/verifyJWT';
+import usersController from '../controllers/users.js';
+import verifyJWT from '../middleware/verifyJWT.js';
 const router = express.Router();
 
 router.post('/', usersController.registerUser);

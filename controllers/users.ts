@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import User from '../models/user';
-import { validateUser, validateUpdateBody } from '../helpers/validation';
+import User from '../models/user.js';
+import { validateUser, validateUpdateBody } from '../helpers/validation.js';
 import { RequestUser, UserInterface } from '../types/picotypes';
 
 async function registerUser(req: Request, res: Response) {

@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import User from '../models/user';
-import { validateAuthBody } from '../helpers/validation';
+import User from '../models/user.js';
+import { validateAuthBody } from '../helpers/validation.js';
 
 async function authorizeUser(req: Request, res: Response) {
     const { error } = validateAuthBody(req.body);
