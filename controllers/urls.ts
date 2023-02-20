@@ -5,9 +5,6 @@ async function getAllUrls(req: Request, res: Response) {
 }
 
 async function getUrl(req: Request, res: Response) {
-    if (!req.query.manage) {
-        return redirectUrl(req, res);
-    }
     return res.status(200).send("GET success");
 }
 
@@ -33,5 +30,5 @@ export default {
     redirectUrl,
     createUrl,
     updateUrl,
-    deleteUrl 
+    deleteUrl
 };
