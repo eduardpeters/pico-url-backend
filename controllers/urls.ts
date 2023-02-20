@@ -19,7 +19,17 @@ async function getUrl(req: Request, res: Response) {
 }
 
 async function redirectUrl(req: Request, res: Response) {
-    return res.status(200).send("Redirect success");
+    const shortUrl = req.params.shorturl;
+    try {
+        const urlEntry = await Url.findOne({ shortUrl: shortUrl });
+        if (urlEntry) {
+            return res.status(301).redirect(urlEntry.originalUrl);
+        }
+        return res.status(404).send('No matching shortened URL found');
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Database error');
+    }
 }
 
 async function createUrl(req: Request, res: Response) {
@@ -36,10 +46,11 @@ async function createUrl(req: Request, res: Response) {
     url = new Url({
         userId: (req as Request & RequestUser).user._id,
         originalUrl: req.body.url,
-        shortUrl: `${process.env.URL_BASE}/${shortId}`,
+        shortUrl: shortId,
     });
     try {
         await url.save();
+        url.shortUrl = `${process.env.URL_BASE}/${shortId}` 
         return res.status(201).json(url);
     } catch (error) {
         console.error(error);
