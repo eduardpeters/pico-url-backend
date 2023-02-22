@@ -48,20 +48,21 @@ async function createUrl(req: Request, res: Response) {
         console.log(error);
         return res.status(400).send(error.details[0].message);
     }
-    let url = await Url.findOne({ originalUrl: req.body.url });
-    if (url) {
-        return res.status(200).json(url);
+    let urlEntry = await Url.findOne({ originalUrl: req.body.url });
+    if (urlEntry) {
+        urlEntry.shortUrl = `${process.env.URL_BASE}/${urlEntry.shortUrl}`;
+        return res.status(200).json(urlEntry);
     }
     const shortId = nanoid(10);
-    url = new Url({
+    urlEntry = new Url({
         userId: (req as Request & RequestUser).user._id,
         originalUrl: req.body.url,
         shortUrl: shortId,
     });
     try {
-        await url.save();
-        url.shortUrl = `${process.env.URL_BASE}/${shortId}` 
-        return res.status(201).json(url);
+        await urlEntry.save();
+        urlEntry.shortUrl = `${process.env.URL_BASE}/${shortId}` 
+        return res.status(201).json(urlEntry);
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error shortening URL');
@@ -69,7 +70,27 @@ async function createUrl(req: Request, res: Response) {
 }
 
 async function updateUrl(req: Request, res: Response) {
-    return res.status(200).send("PATCH success");
+    const shortUrl = req.params.shorturl;
+    const { error } = validateUrl(req.body);
+    if (error) {
+        console.log(error);
+        return res.status(400).send(error.details[0].message);
+    }
+    try {
+        const urlEntry = await Url.findOneAndUpdate(
+            { shortUrl: shortUrl },
+            { originalUrl: req.body.url },
+            { new: true}
+        );
+        if (!urlEntry) {
+            return res.status(404).send('No matching shortened URL found');
+        }
+        urlEntry.shortUrl = `${process.env.URL_BASE}/${urlEntry.shortUrl}`;
+        return res.status(200).json(urlEntry);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Database error');
+    }
 }
 
 async function deleteUrl(req: Request, res: Response) {
