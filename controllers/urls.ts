@@ -6,8 +6,9 @@ import { RequestUser } from '../types/picotypes';
 
 async function getAllUrls(req: Request, res: Response) {
     try {
-        const urls = await Url.find({ userId: (req as Request & RequestUser).user._id });
-        return res.status(200).json(urls);
+        const urlEntries = await Url.find({ userId: (req as Request & RequestUser).user._id });
+        urlEntries.forEach(entry => entry.shortUrl = appendBaseUrl(entry.shortUrl));
+        return res.status(200).json(urlEntries);
     } catch (error) {
         console.error(error);
         return res.status(500).send('Unable to retrieve URLs');
@@ -22,7 +23,7 @@ async function getUrl(req: Request, res: Response) {
             if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
                 return res.status(401).send('Not authorized to view this URL');
             }
-            urlEntry.shortUrl = `${process.env.URL_BASE}/${urlEntry.shortUrl}`;
+            urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
             return res.status(200).json(urlEntry);
         }
         return res.status(404).send('No matching shortened URL found');
@@ -65,7 +66,7 @@ async function createUrl(req: Request, res: Response) {
     });
     try {
         await urlEntry.save();
-        urlEntry.shortUrl = `${process.env.URL_BASE}/${shortId}`
+        urlEntry.shortUrl = appendBaseUrl(shortId);
         return res.status(201).json(urlEntry);
     } catch (error) {
         console.error(error);
@@ -89,7 +90,7 @@ async function updateUrl(req: Request, res: Response) {
         if (!urlEntry) {
             return res.status(404).send('No matching shortened URL found');
         }
-        urlEntry.shortUrl = `${process.env.URL_BASE}/${urlEntry.shortUrl}`;
+        urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
         return res.status(200).json(urlEntry);
     } catch (error) {
         console.error(error);
@@ -106,6 +107,10 @@ async function deleteUrl(req: Request, res: Response) {
         console.error(error);
         return res.status(500).send('Database error');
     }
+}
+
+function appendBaseUrl(shortId: string) {
+    return `${process.env.URL_BASE}/${shortId}`;
 }
 
 export default {
