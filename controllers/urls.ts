@@ -82,13 +82,21 @@ async function updateUrl(req: Request, res: Response) {
         return res.status(400).send(error.details[0].message);
     }
     try {
-        const urlEntry = await Url.findOneAndUpdate(
+        let urlEntry = await Url.findOne({ shortUrl: shortUrl });
+        if (!urlEntry) {
+            return res.status(404).send('No matching shortened URL found');
+        } else {
+            if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
+                return res.status(401).send('Not authorized to edit this URL');
+            }
+        }
+        urlEntry = await Url.findOneAndUpdate(
             { shortUrl: shortUrl },
             { originalUrl: req.body.url },
             { new: true }
         );
         if (!urlEntry) {
-            return res.status(404).send('No matching shortened URL found');
+            throw new Error('Failed to update an existing document');
         }
         urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
         return res.status(200).json(urlEntry);
@@ -101,7 +109,13 @@ async function updateUrl(req: Request, res: Response) {
 async function deleteUrl(req: Request, res: Response) {
     const shortUrl = req.params.shorturl;
     try {
-        await Url.findOneAndDelete({ shortUrl: shortUrl });
+        let urlEntry = await Url.findOne({ shortUrl: shortUrl });
+        if (urlEntry) {
+            if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
+                return res.status(401).send('Not authorized to delete this URL');
+            }
+            await Url.findOneAndDelete({ shortUrl: shortUrl });
+        }
         return res.status(204).send();
     } catch (error) {
         console.error(error);
