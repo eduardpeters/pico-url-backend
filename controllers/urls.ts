@@ -15,13 +15,23 @@ async function getAllUrls(req: Request, res: Response) {
 }
 
 async function getUrl(req: Request, res: Response) {
-    return res.status(200).send("GET success");
+    const shortUrl = req.params.shorturl;
+    try {
+        const urlEntry = await Url.findOne({ shortUrl: shortUrl });
+        if (urlEntry) {
+            return res.status(200).json(urlEntry);
+        }
+        return res.status(404).send('No matching shortened URL found');
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Database error');
+    }
 }
 
 async function redirectUrl(req: Request, res: Response) {
     const shortUrl = req.params.shorturl;
     try {
-        const urlEntry = await Url.findOne({ shortUrl: shortUrl });
+        const urlEntry = await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: 1 } });
         if (urlEntry) {
             return res.status(301).redirect(urlEntry.originalUrl);
         }
@@ -63,7 +73,14 @@ async function updateUrl(req: Request, res: Response) {
 }
 
 async function deleteUrl(req: Request, res: Response) {
-    return res.status(200).send("DELETE success");
+    const shortUrl = req.params.shorturl;
+    try {
+        await Url.findOneAndDelete({ shortUrl: shortUrl });
+        return res.status(204).send();
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Database error');
+    }
 }
 
 export default {
