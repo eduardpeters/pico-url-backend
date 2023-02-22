@@ -1,7 +1,7 @@
-import { ObjectId } from "mongoose"
+import mongoose from "mongoose"
 
 export interface UserInterface {
-    _id?: ObjectId,
+    _id?: mongoose.Types.ObjectId,
     name: string,
     email: string,
     password: string
@@ -9,6 +9,6 @@ export interface UserInterface {
 
 export interface RequestUser {
     user: {
-        _id: ObjectId
+        _id: mongoose.Types.ObjectId
     }
 }

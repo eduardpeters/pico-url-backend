@@ -19,6 +19,10 @@ async function getUrl(req: Request, res: Response) {
     try {
         const urlEntry = await Url.findOne({ shortUrl: shortUrl });
         if (urlEntry) {
+            if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
+                return res.status(401).send('Not authorized to view this URL');
+            }
+            urlEntry.shortUrl = `${process.env.URL_BASE}/${urlEntry.shortUrl}`;
             return res.status(200).json(urlEntry);
         }
         return res.status(404).send('No matching shortened URL found');
@@ -61,7 +65,7 @@ async function createUrl(req: Request, res: Response) {
     });
     try {
         await urlEntry.save();
-        urlEntry.shortUrl = `${process.env.URL_BASE}/${shortId}` 
+        urlEntry.shortUrl = `${process.env.URL_BASE}/${shortId}`
         return res.status(201).json(urlEntry);
     } catch (error) {
         console.error(error);
@@ -80,7 +84,7 @@ async function updateUrl(req: Request, res: Response) {
         const urlEntry = await Url.findOneAndUpdate(
             { shortUrl: shortUrl },
             { originalUrl: req.body.url },
-            { new: true}
+            { new: true }
         );
         if (!urlEntry) {
             return res.status(404).send('No matching shortened URL found');
