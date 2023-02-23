@@ -35,16 +35,21 @@ async function registerUser(req: Request, res: Response) {
 }
 
 async function getUser(req: Request, res: Response) {
-    const user: UserInterface | null = await User.findById((req as Request & RequestUser).user._id);
-    if (!user) {
-        return res.status(404).send('User not found');
+    try {
+        const user: UserInterface | null = await User.findById((req as Request & RequestUser).user._id);
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+        const userInfo = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+        }
+        return res.status(200).json(userInfo);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error creating user');
     }
-    const userInfo = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-    }
-    return res.status(200).json(userInfo);
 }
 
 async function deleteUser(req: Request, res: Response) {
@@ -63,14 +68,18 @@ async function updateUser(req: Request, res: Response) {
         console.log(error);
         return res.status(400).send(error.details[0].message);
     }
+    const updatedUser: { name?: string, email?: string, password?: string } = {};
+    if (req.body.name) {
+        updatedUser.name = req.body.name;
+    }
+    if (req.body.email) {
+        updatedUser.email = req.body.email;
+    }
+    if (req.body.password) {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        updatedUser.password = hashedPassword;
+    }
     try {
-        const updatedUser: { name?: string, email?: string } = {};
-        if (req.body.name) {
-            updatedUser.name = req.body.name;
-        }
-        if (req.body.email) {
-            updatedUser.email = req.body.email;
-        }
         const result = await User.findByIdAndUpdate((req as Request & RequestUser).user._id, updatedUser, { returnDocument: "after" });
         if (!result) {
             return res.status(404).send('User not found');
