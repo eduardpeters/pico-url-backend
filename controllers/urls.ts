@@ -53,18 +53,18 @@ async function createUrl(req: Request, res: Response) {
         console.log(error);
         return res.status(400).send(error.details[0].message);
     }
-    let urlEntry = await Url.findOne({ originalUrl: req.body.url });
-    if (urlEntry) {
-        urlEntry.shortUrl = `${process.env.URL_BASE}/${urlEntry.shortUrl}`;
-        return res.status(200).json(urlEntry);
-    }
-    const shortId = nanoid(10);
-    urlEntry = new Url({
-        userId: (req as Request & RequestUser).user._id,
-        originalUrl: req.body.url,
-        shortUrl: shortId,
-    });
     try {
+        let urlEntry = await Url.findOne({ originalUrl: req.body.url });
+        if (urlEntry) {
+            urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
+            return res.status(200).json(urlEntry);
+        }
+        const shortId = nanoid(10);
+        urlEntry = new Url({
+            userId: (req as Request & RequestUser).user._id,
+            originalUrl: req.body.url,
+            shortUrl: shortId,
+        });
         await urlEntry.save();
         urlEntry.shortUrl = appendBaseUrl(shortId);
         return res.status(201).json(urlEntry);
@@ -85,20 +85,12 @@ async function updateUrl(req: Request, res: Response) {
         let urlEntry = await Url.findOne({ shortUrl: shortUrl });
         if (!urlEntry) {
             return res.status(404).send('No matching shortened URL found');
-        } else {
-            if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
-                return res.status(401).send('Not authorized to edit this URL');
-            }
         }
-        urlEntry = await Url.findOneAndUpdate(
-            { shortUrl: shortUrl },
-            { originalUrl: req.body.url },
-            { new: true }
-        );
-        if (!urlEntry) {
-            throw new Error('Failed to update an existing document');
+        if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
+            return res.status(401).send('Not authorized to edit this URL');
         }
-        urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
+        urlEntry.originalUrl = req.body.url;
+        await urlEntry.save();
         return res.status(200).json(urlEntry);
     } catch (error) {
         console.error(error);
