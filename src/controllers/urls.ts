@@ -38,7 +38,7 @@ async function redirectUrl(req: Request, res: Response) {
     try {
         const urlEntry = await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: 1 } });
         if (urlEntry) {
-            return res.status(301).redirect(urlEntry.originalUrl);
+            return res.status(200).json({originalUrl: urlEntry.originalUrl});
         }
         return res.status(404).send('No matching shortened URL found');
     } catch (error) {
