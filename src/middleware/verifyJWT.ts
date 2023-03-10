@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { RequestUser } from '../types/picotypes';
+import { RequestUser } from '../types/picodeclarations';
 
 function verifyJWT(req: Request, res: Response, next: NextFunction) {
     const token = req.headers.authorization?.split(' ')[1];

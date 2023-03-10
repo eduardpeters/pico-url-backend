@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { nanoid } from 'nanoid';
 import { validateUrl } from '../helpers/validation.js';
 import Url from '../models/url.js';
-import { RequestUser } from '../types/picotypes';
+import { RequestUser } from '../types/picodeclarations';
 
 async function getAllUrls(req: Request, res: Response) {
     try {

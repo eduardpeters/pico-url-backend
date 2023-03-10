@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { UserInterface } from '../types/picotypes';
+import { UserInterface } from '../types/picodeclarations';
 
 export function validateUser(user: UserInterface) {
     const schema = Joi.object({

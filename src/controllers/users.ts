@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/user.js';
 import { validateUser, validateUpdateBody } from '../helpers/validation.js';
-import { RequestUser, UserInterface } from '../types/picotypes';
+import { RequestUser, UserInterface } from '../types/picodeclarations';
 
 async function registerUser(req: Request, res: Response) {
     const { error } = validateUser(req.body);
