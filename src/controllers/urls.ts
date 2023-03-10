@@ -33,12 +33,23 @@ async function getUrl(req: Request, res: Response) {
     }
 }
 
+async function getUrlCount(req: Request, res: Response) {
+    const userId = (req as Request & RequestUser).user._id;
+    try {
+        const urlCount = await Url.countDocuments({ userId: userId });
+        return res.status(200).json({ count: urlCount });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Database error');
+    }
+}
+
 async function redirectUrl(req: Request, res: Response) {
     const shortUrl = req.params.shorturl;
     try {
         const urlEntry = await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: 1 } });
         if (urlEntry) {
-            return res.status(200).json({originalUrl: urlEntry.originalUrl});
+            return res.status(200).json({ originalUrl: urlEntry.originalUrl });
         }
         return res.status(404).send('No matching shortened URL found');
     } catch (error) {
@@ -122,6 +133,7 @@ function appendBaseUrl(shortId: string) {
 export default {
     getAllUrls,
     getUrl,
+    getUrlCount,
     redirectUrl,
     createUrl,
     updateUrl,
