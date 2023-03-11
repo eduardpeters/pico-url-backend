@@ -68,7 +68,7 @@ async function createUrl(req: Request, res: Response) {
         let urlEntry = await Url.findOne({ originalUrl: req.body.url });
         if (urlEntry) {
             urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
-            return res.status(200).json(urlEntry);
+            return res.status(200).json({ shortUrl: urlEntry.shortUrl });
         }
         const shortId = nanoid(10);
         urlEntry = new Url({
@@ -78,7 +78,7 @@ async function createUrl(req: Request, res: Response) {
         });
         await urlEntry.save();
         urlEntry.shortUrl = appendBaseUrl(shortId);
-        return res.status(201).json(urlEntry);
+        return res.status(201).json({ shortUrl: urlEntry.shortUrl });
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error shortening URL');
