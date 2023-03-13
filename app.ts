@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import ExpressMongoSanitize from 'express-mongo-sanitize';
 import usersRoute from './src/routes/users.js';
 import urlsRoute from './src/routes/urls.js';
 import authRoute from './src/routes/auth.js';
@@ -13,6 +14,8 @@ const port = process.env.PORT;
 
 app.use(cors({ origin: process.env.CORS_ORIGIN }));
 app.use(express.json());
+app.use(ExpressMongoSanitize());
+
 app.use('/api/users', usersRoute);
 app.use('/api/auth', authRoute);
 app.use('/api/urls', urlsRoute);
