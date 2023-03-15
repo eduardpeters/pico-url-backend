@@ -48,7 +48,7 @@ async function getUser(req: Request, res: Response) {
 
 async function deleteUser(req: Request, res: Response) {
     try {
-        await User.deleteOne({ _id: (req as Request & RequestUser).user._id });
+        await usersManager.deleteUser((req as Request & RequestUser).user._id);
         return res.status(204).send();
     } catch (error) {
         console.error(error);

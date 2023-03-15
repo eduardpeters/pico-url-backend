@@ -19,6 +19,10 @@ class usersManager {
         }
     }
 
+    static async deleteUser(id: mongoose.Types.ObjectId) {
+        await User.deleteOne({ _id: id });
+    }
+
     static async createUser(newUser: UserInterface) {
         const user = new User({
             name: newUser.name,
