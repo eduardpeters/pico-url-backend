@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import { nanoid } from 'nanoid';
 import { validateUrl } from '../helpers/validation.js';
+import urlsManager from '../managers/urlsManager.js';
 import Url from '../models/url.js';
 import { RequestUser } from '../types/picodeclarations';
 
 async function getAllUrls(req: Request, res: Response) {
     try {
-        const urlEntries = await Url.find({ userId: (req as Request & RequestUser).user._id });
+        const urlEntries = await urlsManager.getAllByUser((req as Request & RequestUser).user._id);
         urlEntries.forEach(entry => entry.shortUrl = appendBaseUrl(entry.shortUrl));
         return res.status(200).json(urlEntries);
     } catch (error) {
