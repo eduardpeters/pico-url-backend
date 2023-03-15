@@ -1,15 +1,21 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import User from '../models/user.js';
 import { validateAuthBody } from '../helpers/validation.js';
+import usersManager from '../managers/usersManager.js';
 
 async function authorizeUser(req: Request, res: Response) {
     const { error } = validateAuthBody(req.body);
     if (error) {
         return res.status(400).send(error.details[0].message);
     }
-    const user = await User.findOne({ email: req.body.email });
+    let user;
+    try {
+        user = await usersManager.getByEmail(req.body.email);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Database error occurred');
+    }
     if (!user) {
         return res.status(400).send('Incorrect email or password');
     }
@@ -21,7 +27,7 @@ async function authorizeUser(req: Request, res: Response) {
     return res.status(200).json({
         _id: user._id,
         name: user.name,
-        email: user.email, 
+        email: user.email,
         token: token
     });
 }
