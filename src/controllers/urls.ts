@@ -18,8 +18,11 @@ async function getAllUrls(req: Request, res: Response) {
 
 async function getUrl(req: Request, res: Response) {
     const shortUrl = req.params.shorturl;
+    if (shortUrl.length !== 10) {
+        return res.status(404).send('Invalid shortened URL length');
+    }
     try {
-        const urlEntry = await Url.findOne({ shortUrl: shortUrl });
+        const urlEntry = await urlsManager.getByShortUrl(shortUrl);
         if (urlEntry) {
             if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
                 return res.status(401).send('Not authorized to view this URL');
@@ -35,9 +38,8 @@ async function getUrl(req: Request, res: Response) {
 }
 
 async function getUrlCount(req: Request, res: Response) {
-    const userId = (req as Request & RequestUser).user._id;
     try {
-        const urlCount = await Url.countDocuments({ userId: userId });
+        const urlCount = await urlsManager.getCount((req as Request & RequestUser).user._id);
         return res.status(200).json({ count: urlCount });
     } catch (error) {
         console.error(error);
