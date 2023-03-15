@@ -10,7 +10,7 @@ export function validateUser(user: UserInterface) {
     return schema.validate(user);
 }
 
-export function validateUpdateBody(body: { name: string, email: string }) {
+export function validateUpdateBody(body: UserInterface) {
     const schema = Joi.object({
         name: Joi.string().min(5).max(50),
         email: Joi.string().min(5).max(255).email(),
@@ -22,7 +22,7 @@ export function validateUpdateBody(body: { name: string, email: string }) {
 export function validateAuthBody(body: { email: string, password: string }) {
     const schema = Joi.object({
         email: Joi.string().min(5).max(255).required().email(),
-        password: Joi.string().min(5).max(255).required()
+        password: Joi.string().min(5).max(1024).required()
     });
     return schema.validate(body);
 }
