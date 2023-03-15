@@ -12,3 +12,9 @@ export interface RequestUser {
         _id: mongoose.Types.ObjectId
     }
 }
+
+export interface UpdatedUserInterface {
+    name?: string;
+    email?: string;
+    password?: string;
+}

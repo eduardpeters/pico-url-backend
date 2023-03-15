@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import User from '../models/user.js';
 import { validateUser, validateUpdateBody } from '../helpers/validation.js';
-import { RequestUser, UserInterface } from '../types/picodeclarations';
+import { RequestUser, UpdatedUserInterface } from '../types/picodeclarations';
 import usersManager from '../managers/usersManager.js';
 
 async function registerUser(req: Request, res: Response) {
@@ -62,7 +61,7 @@ async function updateUser(req: Request, res: Response) {
         console.log(error);
         return res.status(400).send(error.details[0].message);
     }
-    const updatedUser: { name?: string, email?: string, password?: string } = {};
+    const updatedUser: UpdatedUserInterface = {};
     if (req.body.name) {
         updatedUser.name = req.body.name;
     }
@@ -74,16 +73,11 @@ async function updateUser(req: Request, res: Response) {
         updatedUser.password = hashedPassword;
     }
     try {
-        const result = await User.findByIdAndUpdate((req as Request & RequestUser).user._id, updatedUser, { returnDocument: "after" });
-        if (!result) {
+        const user = await usersManager.updateUser((req as Request & RequestUser).user._id, updatedUser);
+        if (!user) {
             return res.status(404).send('User not found');
         }
-        const userInfo = {
-            _id: result._id,
-            name: result.name,
-            email: result.email,
-        }
-        res.status(200).json(userInfo);
+        res.status(200).json(user);
     } catch (error) {
         console.error(error);
         return res.status(500).send('Database error');

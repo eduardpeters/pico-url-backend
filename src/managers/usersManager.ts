@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import User from '../models/user.js';
 import { UserInterface } from '../types/picodeclarations.js';
+import { UpdatedUserInterface } from '../types/picodeclarations.js';
 
 class usersManager {
     static async getByEmail(email: string) {
@@ -30,6 +31,18 @@ class usersManager {
             password: newUser.password
         });
         await user.save();
+        return {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+        }
+    }
+
+    static async updateUser(id: mongoose.Types.ObjectId, updatedUser: UpdatedUserInterface) {
+        const user = await User.findByIdAndUpdate(id, updatedUser, { returnDocument: "after" });
+        if (!user) {
+            return null;
+        }
         return {
             _id: user._id,
             name: user.name,
