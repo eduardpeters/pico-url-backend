@@ -3,35 +3,34 @@ import bcrypt from 'bcrypt';
 import User from '../models/user.js';
 import { validateUser, validateUpdateBody } from '../helpers/validation.js';
 import { RequestUser, UserInterface } from '../types/picodeclarations';
+import usersManager from '../managers/usersManager.js';
 
 async function registerUser(req: Request, res: Response) {
     const { error } = validateUser(req.body);
     if (error) {
-        console.log(error);
         return res.status(400).send(error.details[0].message);
     }
-    let user = await User.findOne({ email: req.body.email });
+    let user;
+    try {
+        user = await usersManager.getByEmail(req.body.email);
+    } catch (error) {
+        return res.status(500).send('Database error occurred');
+    }
     if (user) {
         return res.status(400).send('User already exists');
     }
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
-    user = new User({
-        name: req.body.name,
-        email: req.body.email,
-        password: hashedPassword
-    });
     try {
-        await user.save();
-        const userInfo = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-        }
-        return res.status(201).json(userInfo);
+        user = await usersManager.createUser({
+            name: req.body.name,
+            email: req.body.email,
+            password: hashedPassword
+        });
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error creating user');
     }
+    return res.status(201).json(user);
 }
 
 async function getUser(req: Request, res: Response) {
