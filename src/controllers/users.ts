@@ -35,16 +35,11 @@ async function registerUser(req: Request, res: Response) {
 
 async function getUser(req: Request, res: Response) {
     try {
-        const user: UserInterface | null = await User.findById((req as Request & RequestUser).user._id);
+        const user = await usersManager.getById((req as Request & RequestUser).user._id);
         if (!user) {
             return res.status(404).send('User not found');
         }
-        const userInfo = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-        }
-        return res.status(200).json(userInfo);
+        return res.status(200).json(user);
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error creating user');
