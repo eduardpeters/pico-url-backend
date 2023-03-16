@@ -12,15 +12,11 @@ class usersManager {
     }
 
     static async getById(id: string) {
-        const user = await User.findById(id);
-        if (!user) {
-            return null;
+        const user = await User.findById(id).lean();
+        if (user) {
+            return userDocumentToPasswordlessObject(user);
         }
-        return {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-        }
+        return user;
     }
 
     static async deleteUser(id: string) {
@@ -34,29 +30,30 @@ class usersManager {
             password: newUser.password
         });
         await user.save();
-        return {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-        }
+        return userDocumentToPasswordlessObject(user);
     }
 
     static async updateUser(id: string, updatedUser: UpdatedUserInterface) {
-        const user = await User.findByIdAndUpdate(id, updatedUser, { returnDocument: "after" });
-        if (!user) {
-            return null;
+        const user = await User.findByIdAndUpdate(id, updatedUser, { returnDocument: "after" }).lean();
+        if (user) {
+            return userDocumentToPasswordlessObject(user);
         }
-        return {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-        }
+        return user;
     }
 }
 
 function userDocumentToObject(userDocument: UserInterface) {
-    return {...userDocument,
+    return {
+        ...userDocument,
         _id: userDocument._id?.toString()
+    }
+}
+
+function userDocumentToPasswordlessObject(userDocument: UserInterface) {
+    return {
+        _id: userDocument._id?.toString(),
+        name: userDocument.name,
+        email: userDocument.email,
     }
 }
 
