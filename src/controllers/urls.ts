@@ -19,7 +19,7 @@ async function getAllUrls(req: Request, res: Response) {
 async function getUrl(req: Request, res: Response) {
     const shortUrl = req.params.shorturl;
     if (shortUrl.length !== 10) {
-        return res.status(404).send('Invalid shortened URL length');
+        return res.status(400).send('Invalid shortened URL length');
     }
     try {
         const urlEntry = await urlsManager.getByShortUrl(shortUrl);
@@ -47,10 +47,13 @@ async function getUrlCount(req: Request, res: Response) {
     }
 }
 
-async function redirectUrl(req: Request, res: Response) {
+async function getOriginalUrl(req: Request, res: Response) {
     const shortUrl = req.params.shorturl;
+    if (shortUrl.length !== 10) {
+        return res.status(400).send('Invalid shortened URL length');
+    }
     try {
-        const urlEntry = await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: 1 } });
+        const urlEntry = await urlsManager.getByShortUrlAndIncreaseVisits(shortUrl);
         if (urlEntry) {
             return res.status(200).json({ originalUrl: urlEntry.originalUrl });
         }
@@ -137,7 +140,7 @@ export default {
     getAllUrls,
     getUrl,
     getUrlCount,
-    redirectUrl,
+    getOriginalUrl,
     createUrl,
     updateUrl,
     deleteUrl

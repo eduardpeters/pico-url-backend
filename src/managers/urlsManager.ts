@@ -10,6 +10,10 @@ class urlsManager {
         return await Url.findOne({ shortUrl: shortUrl });
     }
 
+    static async getByShortUrlAndIncreaseVisits(shortUrl: string, amount = 1) {
+        return await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: amount } });
+    }
+
     static async getCount(userId: mongoose.Types.ObjectId) {
         return await Url.countDocuments({ userId: userId });
     }

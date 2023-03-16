@@ -4,7 +4,7 @@ import verifyJWT from '../middleware/verifyJWT.js';
 const router = express.Router();
 
 router.get('/count', verifyJWT, urlsController.getUrlCount);
-router.get('/:shorturl', urlsController.redirectUrl);
+router.get('/:shorturl', urlsController.getOriginalUrl);
 router.get('/', verifyJWT, urlsController.getAllUrls);
 router.post('/', verifyJWT, urlsController.createUrl);
 router.get('/info/:shorturl', verifyJWT, urlsController.getUrl);
