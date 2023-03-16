@@ -12,15 +12,22 @@ class urlsManager {
             return urlDocumentToObject(urlEntry);
         }
         return urlEntry;
-
     }
 
     static async getByShortUrlAndIncreaseVisits(shortUrl: string, amount = 1) {
-        return await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: amount } });
+        const urlEntry = await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: amount } }).lean();
+        if (urlEntry) {
+            return urlDocumentToObject(urlEntry);
+        }
+        return urlEntry; 
     }
 
     static async getCount(userId: string) {
         return await Url.countDocuments({ userId: userId });
+    }
+
+    static async deleteByShortUrl(shortUrl: string) {
+        await Url.findOneAndDelete({ shortUrl: shortUrl });
     }
 }
 

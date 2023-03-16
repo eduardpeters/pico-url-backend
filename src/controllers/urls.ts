@@ -24,7 +24,7 @@ async function getUrl(req: Request, res: Response) {
     try {
         const urlEntry = await urlsManager.getByShortUrl(shortUrl);
         if (urlEntry) {
-            if (urlEntry.userId !== (req as Request & RequestUser).user._id.toString()) {
+            if (urlEntry.userId !== (req as Request & RequestUser).user._id) {
                 return res.status(401).send('Not authorized to view this URL');
             }
             urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
@@ -118,12 +118,12 @@ async function updateUrl(req: Request, res: Response) {
 async function deleteUrl(req: Request, res: Response) {
     const shortUrl = req.params.shorturl;
     try {
-        let urlEntry = await Url.findOne({ shortUrl: shortUrl });
+        const urlEntry = await urlsManager.getByShortUrl(shortUrl);
         if (urlEntry) {
-            if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
+            if (urlEntry.userId !== (req as Request & RequestUser).user._id) {
                 return res.status(401).send('Not authorized to delete this URL');
             }
-            await Url.findOneAndDelete({ shortUrl: shortUrl });
+            await urlsManager.deleteByShortUrl(shortUrl);
         }
         return res.status(204).send();
     } catch (error) {
