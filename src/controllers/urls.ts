@@ -24,7 +24,7 @@ async function getUrl(req: Request, res: Response) {
     try {
         const urlEntry = await urlsManager.getByShortUrl(shortUrl);
         if (urlEntry) {
-            if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
+            if (urlEntry.userId !== (req as Request & RequestUser).user._id.toString()) {
                 return res.status(401).send('Not authorized to view this URL');
             }
             urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
