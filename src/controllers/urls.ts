@@ -70,19 +70,24 @@ async function createUrl(req: Request, res: Response) {
         console.log(error);
         return res.status(400).send(error.details[0].message);
     }
+    let urlEntry;
     try {
-        let urlEntry = await Url.findOne({ originalUrl: req.body.url });
+        urlEntry = await urlsManager.getByOriginalUrl(req.body.url);
         if (urlEntry) {
             urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
             return res.status(200).json({ shortUrl: urlEntry.shortUrl });
         }
-        const shortId = nanoid(10);
-        urlEntry = new Url({
-            userId: (req as Request & RequestUser).user._id,
-            originalUrl: req.body.url,
-            shortUrl: shortId,
-        });
-        await urlEntry.save();
+    } catch (error) {
+        return res.status(500).send('Database error');
+    }
+    const shortId = nanoid(10);
+    const newUrl = {
+        userId: (req as Request & RequestUser).user._id,
+        originalUrl: req.body.url,
+        shortUrl: shortId,
+    };
+    try {
+        urlEntry = await urlsManager.createUrl(newUrl);
         urlEntry.shortUrl = appendBaseUrl(shortId);
         return res.status(201).json({ shortUrl: urlEntry.shortUrl });
     } catch (error) {

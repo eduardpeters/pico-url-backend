@@ -1,6 +1,12 @@
 import Url from '../models/url.js';
 import { UrlInterface } from '../types/picodeclarations.js';
 
+interface NewUrlInterface {
+    userId: string;
+    originalUrl: string;
+    shortUrl: string;
+}
+
 class urlsManager {
     static async getAllByUser(userId: string) {
         return await Url.find({ userId: userId });
@@ -14,16 +20,30 @@ class urlsManager {
         return urlEntry;
     }
 
+    static async getByOriginalUrl(originalUrl: string) {
+        const urlEntry = await Url.findOne({ originalUrl: originalUrl }).lean();
+        if (urlEntry) {
+            return urlDocumentToObject(urlEntry);
+        }
+        return urlEntry;
+    }
+
     static async getByShortUrlAndIncreaseVisits(shortUrl: string, amount = 1) {
         const urlEntry = await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: amount } }).lean();
         if (urlEntry) {
             return urlDocumentToObject(urlEntry);
         }
-        return urlEntry; 
+        return urlEntry;
     }
 
     static async getCount(userId: string) {
         return await Url.countDocuments({ userId: userId });
+    }
+
+    static async createUrl(newUrl: NewUrlInterface) {
+        const urlEntry = new Url(newUrl);
+        await urlEntry.save();
+        return urlDocumentToObject(urlEntry.toObject());
     }
 
     static async deleteByShortUrl(shortUrl: string) {
@@ -31,8 +51,9 @@ class urlsManager {
     }
 }
 
-function urlDocumentToObject(urlDocument: UrlInterface) { 
-    return {...urlDocument,
+function urlDocumentToObject(urlDocument: UrlInterface) {
+    return {
+        ...urlDocument,
         _id: urlDocument._id?.toString(),
         userId: urlDocument.userId.toString()
     }
