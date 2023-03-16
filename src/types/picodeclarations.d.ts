@@ -9,7 +9,7 @@ export interface UserInterface {
 
 export interface RequestUser {
     user: {
-        _id: mongoose.Types.ObjectId;
+        _id: string;
     }
 }
 

@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
 import { RequestUser } from '../types/picodeclarations';
 
 function verifyJWT(req: Request, res: Response, next: NextFunction) {
@@ -10,7 +9,7 @@ function verifyJWT(req: Request, res: Response, next: NextFunction) {
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-        (req as Request & RequestUser).user = (decoded as {_id: mongoose.Types.ObjectId});
+        (req as Request & RequestUser).user = (decoded as {_id: string});
         next();
     } catch (error) {
         console.log(error);

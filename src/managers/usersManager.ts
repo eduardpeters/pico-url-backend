@@ -1,14 +1,17 @@
-import mongoose from 'mongoose';
 import User from '../models/user.js';
 import { UserInterface } from '../types/picodeclarations.js';
 import { UpdatedUserInterface } from '../types/picodeclarations.js';
 
 class usersManager {
     static async getByEmail(email: string) {
-        return await User.findOne({ email: email });
+        const user = await User.findOne({ email: email }).lean();
+        if (user) {
+            return userDocumentToObject(user);
+        }
+        return user;
     }
 
-    static async getById(id: mongoose.Types.ObjectId) {
+    static async getById(id: string) {
         const user = await User.findById(id);
         if (!user) {
             return null;
@@ -20,7 +23,7 @@ class usersManager {
         }
     }
 
-    static async deleteUser(id: mongoose.Types.ObjectId) {
+    static async deleteUser(id: string) {
         await User.deleteOne({ _id: id });
     }
 
@@ -38,7 +41,7 @@ class usersManager {
         }
     }
 
-    static async updateUser(id: mongoose.Types.ObjectId, updatedUser: UpdatedUserInterface) {
+    static async updateUser(id: string, updatedUser: UpdatedUserInterface) {
         const user = await User.findByIdAndUpdate(id, updatedUser, { returnDocument: "after" });
         if (!user) {
             return null;
@@ -48,6 +51,12 @@ class usersManager {
             name: user.name,
             email: user.email,
         }
+    }
+}
+
+function userDocumentToObject(userDocument: UserInterface) {
+    return {...userDocument,
+        _id: userDocument._id?.toString()
     }
 }
 

@@ -1,9 +1,8 @@
-import mongoose from 'mongoose';
 import Url from '../models/url.js';
 import { UrlInterface } from '../types/picodeclarations.js';
 
 class urlsManager {
-    static async getAllByUser(userId: mongoose.Types.ObjectId) {
+    static async getAllByUser(userId: string) {
         return await Url.find({ userId: userId });
     }
 
@@ -20,17 +19,16 @@ class urlsManager {
         return await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: amount } });
     }
 
-    static async getCount(userId: mongoose.Types.ObjectId) {
+    static async getCount(userId: string) {
         return await Url.countDocuments({ userId: userId });
     }
 }
 
 function urlDocumentToObject(urlDocument: UrlInterface) { 
-    const urlObject = {...urlDocument,
+    return {...urlDocument,
         _id: urlDocument._id?.toString(),
         userId: urlDocument.userId.toString()
     }
-    return urlObject;
 }
 
 export default urlsManager;
