@@ -1,5 +1,5 @@
 import express from 'express';
-import urlsController from '../controllers/urls.js';
+import urlsController from '../controllers/urlsController.js';
 import verifyJWT from '../middleware/verifyJWT.js';
 const router = express.Router();
 

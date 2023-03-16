@@ -2,9 +2,9 @@ import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import ExpressMongoSanitize from 'express-mongo-sanitize';
-import usersRoute from './src/routes/users.js';
-import urlsRoute from './src/routes/urls.js';
-import authRoute from './src/routes/auth.js';
+import usersRoute from './src/routes/usersRoute.js';
+import urlsRoute from './src/routes/urlsRoute.js';
+import authRoute from './src/routes/authRoute.js';
 import connectToDatabase from './src/db/connect.js';
 
 dotenv.config();
