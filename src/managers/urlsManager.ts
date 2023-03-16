@@ -46,6 +46,14 @@ class urlsManager {
         return urlDocumentToObject(urlEntry.toObject());
     }
 
+    static async updateUrl(id: string, newUrl: string) {
+        const urlEntry = await Url.findByIdAndUpdate(id, { originalUrl: newUrl }, { returnDocument: "after" }).lean();
+        if (urlEntry) {
+            return urlDocumentToObject(urlEntry);
+        }
+        return urlEntry;
+    }
+
     static async deleteByShortUrl(shortUrl: string) {
         await Url.findOneAndDelete({ shortUrl: shortUrl });
     }

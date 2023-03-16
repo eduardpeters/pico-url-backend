@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { nanoid } from 'nanoid';
 import { validateUrl } from '../helpers/validation.js';
 import urlsManager from '../managers/urlsManager.js';
-import Url from '../models/url.js';
 import { RequestUser } from '../types/picodeclarations';
 
 async function getAllUrls(req: Request, res: Response) {
@@ -104,15 +103,14 @@ async function updateUrl(req: Request, res: Response) {
         return res.status(400).send(error.details[0].message);
     }
     try {
-        let urlEntry = await Url.findOne({ shortUrl: shortUrl });
+        let urlEntry = await urlsManager.getByShortUrl(shortUrl);
         if (!urlEntry) {
             return res.status(404).send('No matching shortened URL found');
         }
-        if (!urlEntry.userId.equals((req as Request & RequestUser).user._id)) {
+        if (urlEntry.userId !== (req as Request & RequestUser).user._id) {
             return res.status(401).send('Not authorized to edit this URL');
         }
-        urlEntry.originalUrl = req.body.url;
-        await urlEntry.save();
+        urlEntry = await urlsManager.updateUrl(urlEntry._id as string, req.body.url);
         return res.status(200).json(urlEntry);
     } catch (error) {
         console.error(error);
