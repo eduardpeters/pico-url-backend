@@ -4,6 +4,8 @@ import { validateUrl } from '../helpers/validation.js';
 import urlsManager from '../managers/urlsManager.js';
 import { RequestUser } from '../types/picodeclarations';
 
+const SHORTIDLENGTH = 10;
+
 async function getAllUrls(req: Request, res: Response) {
     try {
         const urlEntries = await urlsManager.getAllByUser((req as Request & RequestUser).user._id);
@@ -79,15 +81,14 @@ async function createUrl(req: Request, res: Response) {
     } catch (error) {
         return res.status(500).send('Database error');
     }
-    const shortId = nanoid(10);
     const newUrl = {
         userId: (req as Request & RequestUser).user._id,
         originalUrl: req.body.url,
-        shortUrl: shortId,
+        shortUrl: nanoid(SHORTIDLENGTH),
     };
     try {
         urlEntry = await urlsManager.createUrl(newUrl);
-        urlEntry.shortUrl = appendBaseUrl(shortId);
+        urlEntry.shortUrl = appendBaseUrl(urlEntry.shortUrl);
         return res.status(201).json({ shortUrl: urlEntry.shortUrl });
     } catch (error) {
         console.error(error);
