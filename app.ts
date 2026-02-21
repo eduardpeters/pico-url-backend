@@ -26,7 +26,11 @@ app.get('/', (req: Request, res: Response) => {
 (async function startServer() {
     try {
         await connectToDatabase();
-        app.listen(port, () => {
+        app.listen(port, (error?: Error) => {
+            if (error) {
+                console.error(error);
+                return;
+            }
             console.log(`Server is running at http://localhost:${port}`);
         });
     } catch (error) {

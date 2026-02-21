@@ -18,7 +18,7 @@ async function getAllUrls(req: Request, res: Response) {
 }
 
 async function getUrl(req: Request, res: Response) {
-    const shortUrl = req.params.shorturl;
+    const shortUrl = req.params.shorturl as string;
     if (shortUrl.length !== 10) {
         return res.status(400).send('Invalid shortened URL length');
     }
@@ -49,7 +49,7 @@ async function getUrlCount(req: Request, res: Response) {
 }
 
 async function getOriginalUrl(req: Request, res: Response) {
-    const shortUrl = req.params.shorturl;
+    const shortUrl = req.params.shorturl as string;
     if (shortUrl.length !== 10) {
         return res.status(400).send('Invalid shortened URL length');
     }
@@ -97,7 +97,7 @@ async function createUrl(req: Request, res: Response) {
 }
 
 async function updateUrl(req: Request, res: Response) {
-    const shortUrl = req.params.shorturl;
+    const shortUrl = req.params.shorturl as string;
     const { error } = validateUrl(req.body);
     if (error) {
         console.log(error);
@@ -120,7 +120,7 @@ async function updateUrl(req: Request, res: Response) {
 }
 
 async function deleteUrl(req: Request, res: Response) {
-    const shortUrl = req.params.shorturl;
+    const shortUrl = req.params.shorturl as string;
     try {
         const urlEntry = await urlsManager.getByShortUrl(shortUrl);
         if (urlEntry) {
