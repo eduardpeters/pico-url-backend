@@ -1,7 +1,6 @@
 import Joi from 'joi';
-import { UserInterface } from '../types/picodeclarations';
 
-export function validateUser(user: UserInterface) {
+export function validateUser(user: { name: string; email: string; password: string }) {
     const schema = Joi.object({
         name: Joi.string().min(5).max(50).required(),
         email: Joi.string().min(5).max(255).required().email(),
@@ -10,7 +9,7 @@ export function validateUser(user: UserInterface) {
     return schema.validate(user);
 }
 
-export function validateUpdateBody(body: UserInterface) {
+export function validateUpdateBody(body: { name?: string; email?: string; password?: string }) {
     const schema = Joi.object({
         name: Joi.string().min(5).max(50),
         email: Joi.string().min(5).max(255).email(),

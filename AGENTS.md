@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-URL shortener REST API built with Express + TypeScript, MongoDB (Mongoose), and JWT authentication.
+URL shortener REST API built with Express + TypeScript, PostgreSQL (Drizzle ORM), and JWT authentication.
 ESM module system (`"type": "module"` in package.json).
 
 ## Build / Run Commands
@@ -21,6 +21,20 @@ npm run dev            # runs: tsx watch app.ts
 npx tsc --noEmit
 ```
 
+## Database Migrations
+
+Migrations are managed with Drizzle Kit and must be run manually.
+
+```bash
+# Generate a new migration after schema changes
+npx drizzle-kit generate
+
+# Apply pending migrations to the database
+npx drizzle-kit migrate
+```
+
+Migration SQL files are stored in `./drizzle/`. Always commit generated migration files alongside schema changes.
+
 ## Tests
 
 **No test framework is configured.** The `npm test` script is a placeholder that exits with error.
@@ -35,39 +49,41 @@ Follow the existing code style conventions described below.
 
 ```
 app.ts                        # Entry point: Express setup, middleware, routes, server start
+drizzle.config.ts             # Drizzle Kit configuration
+drizzle/                      # Generated SQL migration files
 src/
 ├── controllers/              # Request handlers (business logic + HTTP responses)
 │   ├── authController.ts     # Login/auth: JWT token generation
 │   ├── urlsController.ts     # CRUD for shortened URLs
 │   └── usersController.ts    # User registration, get, update, delete
 ├── db/
-│   └── connect.ts            # Mongoose connection setup
+│   ├── connect.ts            # postgres.js pool + Drizzle instance, connectToDatabase()
+│   └── schema.ts             # Drizzle table definitions (users, urls)
 ├── helpers/
 │   └── validation.ts         # Joi validation schemas
-├── managers/                 # Data access layer (static class methods wrapping Mongoose)
-│   ├── urlsManager.ts        # URL CRUD against MongoDB
-│   └── usersManager.ts       # User CRUD against MongoDB
+├── managers/                 # Data access layer (static class methods wrapping Drizzle)
+│   ├── urlsManager.ts        # URL CRUD against PostgreSQL
+│   └── usersManager.ts       # User CRUD against PostgreSQL
 ├── middleware/
 │   └── verifyJWT.ts          # JWT verification middleware
-├── models/                   # Mongoose schema/model definitions
-│   ├── url.ts                # Url model
-│   └── user.ts               # User model
 ├── routes/                   # Express Router definitions
 │   ├── authRoute.ts
 │   ├── urlsRoute.ts
 │   └── usersRoute.ts
 └── types/
-    └── picodeclarations.d.ts # TypeScript interfaces
+    ├── auth.ts               # RequestUser interface (for JWT-authenticated requests)
+    ├── url.ts                # UrlSelect, UrlInsert (derived from Drizzle schema)
+    └── user.ts               # UserSelect, UserPublic, UserInsert, UpdatedUser (derived from Drizzle schema)
 ```
 
 ## Architecture
 
-Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Models**.
+Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Schema**.
 
 - **Routes** define Express endpoints and attach middleware.
 - **Controllers** handle request/response, validation, and orchestration.
-- **Managers** are static classes that wrap Mongoose queries (data access layer).
-- **Models** define Mongoose schemas and export the model.
+- **Managers** are static classes that wrap Drizzle queries (data access layer).
+- **Schema** (`src/db/schema.ts`) defines Drizzle table definitions used as the source of truth for both queries and TypeScript types.
 
 ## Code Style Guidelines
 
@@ -78,9 +94,10 @@ Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Models**.
   ```ts
   import urlsManager from '../managers/urlsManager.js';
   ```
-- Type imports from `.d.ts` files use extensionless paths:
+- Type imports use `.js` extension (same as regular imports):
   ```ts
-  import { RequestUser } from '../types/picodeclarations';
+  import { RequestUser } from '../types/auth.js';
+  import type { UserSelect } from '../types/user.js';
   ```
 - Target: `es2020`, Module: `ESNext`, Module resolution: `node`.
 
@@ -93,16 +110,15 @@ Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Models**.
 
 ### Naming Conventions
 
-| Element           | Convention                  | Example                          |
-|-------------------|-----------------------------|----------------------------------|
-| Files             | camelCase                   | `urlsController.ts`              |
-| Interfaces        | PascalCase + `Interface`    | `UserInterface`, `UrlInterface`  |
-| Manager classes   | camelCase (project convention) | `class usersManager`          |
-| Functions         | camelCase                   | `registerUser`, `getAllUrls`      |
-| Constants         | SCREAMING_SNAKE_CASE        | `SHORTIDLENGTH`                  |
-| Variables         | camelCase                   | `urlEntry`, `hashedPassword`     |
-| Mongoose models   | PascalCase                  | `User`, `Url`                    |
-| Router variables  | `router`                    | `const router = express.Router()`|
+| Element           | Convention                     | Example                          |
+|-------------------|--------------------------------|----------------------------------|
+| Files             | camelCase                      | `urlsController.ts`              |
+| Types             | PascalCase                     | `UserSelect`, `UserPublic`       |
+| Manager classes   | camelCase (project convention) | `class usersManager`             |
+| Functions         | camelCase                      | `registerUser`, `getAllUrls`      |
+| Constants         | SCREAMING_SNAKE_CASE           | `SHORTIDLENGTH`                  |
+| Variables         | camelCase                      | `urlEntry`, `hashedPassword`     |
+| Router variables  | `router`                       | `const router = express.Router()`|
 
 ### Export Patterns
 
@@ -114,15 +130,15 @@ Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Models**.
   ```ts
   export default usersManager;
   ```
-- **Models:** Default export of the Mongoose model:
-  ```ts
-  export default User;
-  ```
 - **Middleware:** Default export of the function.
 - **Routes:** Default export of the router.
 - **Helpers/Validation:** Named exports:
   ```ts
   export function validateUser(...) { ... }
+  ```
+- **Types:** Named exports from regular `.ts` files (not `.d.ts`):
+  ```ts
+  export type UserSelect = typeof users.$inferSelect;
   ```
 
 ### Error Handling
@@ -140,7 +156,12 @@ Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Models**.
 
 ### Types
 
-- All custom interfaces live in `src/types/picodeclarations.d.ts`.
+- Domain types live in `src/types/` split by domain: `user.ts`, `url.ts`, `auth.ts`.
+- Types are derived from the Drizzle schema using `$inferSelect` / `$inferInsert` to stay automatically in sync with schema changes:
+  ```ts
+  export type UserSelect = typeof users.$inferSelect;
+  export type UserPublic = Omit<UserSelect, 'hashedPassword'>;
+  ```
 - JWT-authenticated request user is accessed via type assertion:
   ```ts
   (req as Request & RequestUser).user._id
@@ -150,7 +171,6 @@ Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Models**.
   process.env.JWT_SECRET as string
   ```
 - Joi is used for runtime request body validation alongside TypeScript types.
-- Mongoose queries use `.lean()` for performance (returns plain objects).
 
 ## Environment Variables
 
@@ -160,16 +180,18 @@ Required (loaded via `dotenv`):
 |----------------|------------------------------------------------|
 | `PORT`         | Server port (Dockerfile exposes 4242)          |
 | `CORS_ORIGIN`  | Allowed CORS origin                            |
-| `MONGODB_URI`  | MongoDB connection string                      |
+| `DATABASE_URL` | PostgreSQL connection string                   |
 | `JWT_SECRET`   | Secret key for JWT signing                     |
 | `URL_BASE`     | Base URL for constructing short URLs           |
 
-**Never commit `.env` files.** The `.gitignore` already excludes them.
+Copy `.env.example` to `.env` and fill in your values before running the server.
+
+**Never commit `.env` files.** The `.gitignore` already excludes them. Keep `.env.example` up to date whenever new variables are added.
 
 ## Dependencies
 
-**Runtime:** express (v5), mongoose, cors, dotenv, bcrypt, jsonwebtoken, joi, nanoid (v5, ESM-only), express-mongo-sanitize.
-**Dev:** typescript (v5), tsx (watch mode / HMR), @types/node, @types/express, @types/bcrypt, @types/cors, @types/jsonwebtoken.
+**Runtime:** express (v5), drizzle-orm, postgres, cors, dotenv, bcrypt, jsonwebtoken, joi, nanoid (v5, ESM-only).
+**Dev:** typescript (v5), tsx (watch mode / HMR), drizzle-kit, @types/node, @types/express, @types/bcrypt, @types/cors, @types/jsonwebtoken.
 
 ### Express 5 Notes
 
