@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { validateUser, validateUpdateBody } from '../helpers/validation.js';
-import { RequestUser, UpdatedUserInterface } from '../types/picodeclarations';
+import { RequestUser } from '../types/auth.js';
+import { UpdatedUser } from '../types/user.js';
 import usersManager from '../managers/usersManager.js';
 
 async function registerUser(req: Request, res: Response) {
@@ -23,7 +24,7 @@ async function registerUser(req: Request, res: Response) {
         user = await usersManager.createUser({
             name: req.body.name,
             email: req.body.email,
-            password: hashedPassword
+            hashedPassword: hashedPassword,
         });
     } catch (error) {
         console.error(error);
@@ -41,7 +42,7 @@ async function getUser(req: Request, res: Response) {
         return res.status(200).json(user);
     } catch (error) {
         console.error(error);
-        return res.status(500).send('Error creating user');
+        return res.status(500).send('Error retrieving user');
     }
 }
 
@@ -61,7 +62,7 @@ async function updateUser(req: Request, res: Response) {
         console.log(error);
         return res.status(400).send(error.details[0].message);
     }
-    const updatedUser: UpdatedUserInterface = {};
+    const updatedUser: UpdatedUser = {};
     if (req.body.name) {
         updatedUser.name = req.body.name;
     }
@@ -69,8 +70,7 @@ async function updateUser(req: Request, res: Response) {
         updatedUser.email = req.body.email;
     }
     if (req.body.password) {
-        const hashedPassword = await bcrypt.hash(req.body.password, 10);
-        updatedUser.password = hashedPassword;
+        updatedUser.hashedPassword = await bcrypt.hash(req.body.password, 10);
     }
     try {
         const user = await usersManager.updateUser((req as Request & RequestUser).user._id, updatedUser);

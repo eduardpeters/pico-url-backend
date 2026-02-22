@@ -1,69 +1,59 @@
-import Url from '../models/url.js';
-import { UrlInterface } from '../types/picodeclarations.js';
+import { eq, count, sql } from 'drizzle-orm';
+import { db } from '../db/connect.js';
+import { urls } from '../db/schema.js';
+import type { UrlSelect, UrlInsert } from '../types/url.js';
 
-interface NewUrlInterface {
+interface NewUrlInput {
     userId: string;
-    originalUrl: string;
-    shortUrl: string;
+    original: string;
+    short: string;
 }
 
 class urlsManager {
-    static async getAllByUser(userId: string) {
-        return await Url.find({ userId: userId });
+    static async getAllByUser(userId: string): Promise<UrlSelect[]> {
+        return await db.select().from(urls).where(eq(urls.userId, userId));
     }
 
-    static async getByShortUrl(shortUrl: string) {
-        const urlEntry = await Url.findOne({ shortUrl: shortUrl }).lean();
-        if (urlEntry) {
-            return urlDocumentToObject(urlEntry);
-        }
-        return urlEntry;
+    static async getByShortUrl(short: string): Promise<UrlSelect | undefined> {
+        const results = await db.select().from(urls).where(eq(urls.short, short));
+        return results[0];
     }
 
-    static async getByOriginalUrl(originalUrl: string) {
-        const urlEntry = await Url.findOne({ originalUrl: originalUrl }).lean();
-        if (urlEntry) {
-            return urlDocumentToObject(urlEntry);
-        }
-        return urlEntry;
+    static async getByOriginalUrl(original: string): Promise<UrlSelect | undefined> {
+        const results = await db.select().from(urls).where(eq(urls.original, original));
+        return results[0];
     }
 
-    static async getByShortUrlAndIncreaseVisits(shortUrl: string, amount = 1) {
-        const urlEntry = await Url.findOneAndUpdate({ shortUrl: shortUrl }, { $inc: { visits: amount } }).lean();
-        if (urlEntry) {
-            return urlDocumentToObject(urlEntry);
-        }
-        return urlEntry;
+    static async getByShortUrlAndIncreaseVisits(short: string, amount = 1): Promise<UrlSelect | undefined> {
+        const results = await db
+            .update(urls)
+            .set({ visits: sql`${urls.visits} + ${amount}` })
+            .where(eq(urls.short, short))
+            .returning();
+        return results[0];
     }
 
-    static async getCount(userId: string) {
-        return await Url.countDocuments({ userId: userId });
+    static async getCount(userId: string): Promise<number> {
+        const results = await db.select({ count: count() }).from(urls).where(eq(urls.userId, userId));
+        return results[0].count;
     }
 
-    static async createUrl(newUrl: NewUrlInterface) {
-        const urlEntry = new Url(newUrl);
-        await urlEntry.save();
-        return urlDocumentToObject(urlEntry.toObject());
+    static async createUrl(newUrl: NewUrlInput): Promise<UrlSelect> {
+        const results = await db.insert(urls).values(newUrl).returning();
+        return results[0];
     }
 
-    static async updateUrl(id: string, newUrl: string) {
-        const urlEntry = await Url.findByIdAndUpdate(id, { originalUrl: newUrl }, { returnDocument: "after" }).lean();
-        if (urlEntry) {
-            return urlDocumentToObject(urlEntry);
-        }
-        return urlEntry;
+    static async updateUrl(id: string, newOriginal: string): Promise<UrlSelect | undefined> {
+        const results = await db
+            .update(urls)
+            .set({ original: newOriginal })
+            .where(eq(urls.id, id))
+            .returning();
+        return results[0];
     }
 
-    static async deleteByShortUrl(shortUrl: string) {
-        await Url.findOneAndDelete({ shortUrl: shortUrl });
-    }
-}
-
-function urlDocumentToObject(urlDocument: UrlInterface) {
-    return {
-        ...urlDocument,
-        _id: urlDocument._id?.toString(),
-        userId: urlDocument.userId.toString()
+    static async deleteByShortUrl(short: string): Promise<void> {
+        await db.delete(urls).where(eq(urls.short, short));
     }
 }
 
