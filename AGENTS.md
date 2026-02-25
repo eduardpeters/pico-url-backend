@@ -19,6 +19,15 @@ npm run dev            # runs: tsx watch app.ts
 
 # Type-check without emitting
 npx tsc --noEmit
+
+# Run all unit tests once
+npm test                # runs: vitest run
+
+# Run tests in watch mode
+npm run test:watch      # runs: vitest
+
+# Run tests with coverage
+npm run test:coverage   # runs: vitest run --coverage
 ```
 
 ## Database Migrations
@@ -37,8 +46,20 @@ Migration SQL files are stored in `./drizzle/`. Always commit generated migratio
 
 ## Tests
 
-**No test framework is configured.** The `npm test` script is a placeholder that exits with error.
-If tests are added in the future, update this section with the framework and commands.
+Unit tests use **Vitest** with mocked manager/DB layers (no real database required).
+
+Test files live alongside the code they test in `__tests__` subdirectories:
+
+```
+src/helpers/__tests__/validation.test.ts
+src/middleware/__tests__/verifyJWT.test.ts
+src/controllers/__tests__/authController.test.ts
+src/controllers/__tests__/usersController.test.ts
+src/controllers/__tests__/urlsController.test.ts
+```
+
+Environment variables for tests are loaded from `.env.test` via a Vitest setup file (`src/test-setup.ts`).
+`.env.test` must exist at the project root (copy `.env.test` is committed with safe placeholder values — do not use real secrets).
 
 ## Linting / Formatting
 

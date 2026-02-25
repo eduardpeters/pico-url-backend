@@ -155,15 +155,37 @@ Added getting-started guide (install → copy `.env.example` → migrate → run
 
 ---
 
-## Phase 3: Add Vitest & Unit Tests — NOT STARTED
+## Phase 3: Add Vitest & Unit Tests — COMPLETED
 
-### 3.1 Install Vitest
+### What was done
 
-```bash
-npm install -D vitest
+#### Dependencies
+- Installed: `vitest@4.0.18` (dev)
+
+#### `vitest.config.ts` — created
+
+```ts
+export default defineConfig({
+    test: {
+        environment: 'node',
+        setupFiles: ['./src/test-setup.ts'],
+    },
+});
 ```
 
-### 3.2 Add test scripts to package.json
+Note: Vitest 4 does not support an `envFile` option in config. A `setupFiles` entry is used instead to load `.env.test` before each test file runs.
+
+#### `src/test-setup.ts` — created
+
+Loads `.env.test` via `dotenv.config({ path: '.env.test' })` so all `process.env.*` values are available to tests without a real environment.
+
+#### `.env.test` — created
+
+Committed to the repository with safe placeholder values for all five required env vars (`PORT`, `CORS_ORIGIN`, `DATABASE_URL`, `JWT_SECRET`, `URL_BASE`). Does not contain real secrets.
+
+#### `package.json` — updated
+
+Replaced the placeholder `test` script; added `test:watch` and `test:coverage`:
 
 ```json
 "test": "vitest run",
@@ -171,65 +193,142 @@ npm install -D vitest
 "test:coverage": "vitest run --coverage"
 ```
 
-### 3.3 Configure Vitest
+#### Test files — created (84 tests across 5 files)
 
-Create `vitest.config.ts` at project root. Configure for ESM + TypeScript.
+All controller tests mock the manager layer entirely (`vi.mock`) so no database connection is ever attempted.
 
-### 3.4 Write unit tests with mocked DB layer
+| Test File | Tests | Coverage |
+|---|---|---|
+| `src/helpers/__tests__/validation.test.ts` | 30 | All 4 Joi schemas — valid/invalid inputs, boundary values, edge cases |
+| `src/middleware/__tests__/verifyJWT.test.ts` | 5 | Missing token, no Bearer value, valid token → `next()` + `req.user` set, invalid token, expired token |
+| `src/controllers/__tests__/authController.test.ts` | 6 | Validation failure, user not found, wrong password, successful login (JWT signed + user info returned), DB error |
+| `src/controllers/__tests__/usersController.test.ts` | 16 | Register (success, duplicate email, validation error, DB errors), getUser (found, not found, DB error), deleteUser (success, DB error), updateUser (partial fields, password hashed, not found, DB error) |
+| `src/controllers/__tests__/urlsController.test.ts` | 27 | getAllUrls, getUrl (ownership check), getUrlCount, getOriginalUrl (visit increment), createUrl (idempotent existing URL, new URL, nanoid called), updateUrl (ownership check), deleteUrl (ownership check, idempotent) |
 
-Mock the manager layer so tests don't need a real database.
+#### `AGENTS.md` — updated
 
-| Test File | Coverage |
-|---|---|
-| `src/controllers/__tests__/authController.test.ts` | Login flow, JWT generation, invalid credentials, missing fields |
-| `src/controllers/__tests__/usersController.test.ts` | Registration, get/update/delete user, duplicate email, validation |
-| `src/controllers/__tests__/urlsController.test.ts` | URL CRUD, ownership checks, visit counting, nanoid generation |
-| `src/helpers/__tests__/validation.test.ts` | All 4 Joi schemas — valid/invalid inputs, edge cases |
-| `src/middleware/__tests__/verifyJWT.test.ts` | Token extraction, valid/invalid/missing tokens |
+- Tests section replaced: now accurately describes Vitest, test file locations, and `.env.test` setup.
+- Build/Run Commands section updated: `npm test`, `test:watch`, `test:coverage` added.
 
-### 3.5 Running tests
+#### `README.md` — updated
 
-```bash
-# Run all tests once
-npx vitest run
+Testing section added documenting the three test commands and the `.env.test` approach.
 
-# Run a single test file
-npx vitest run src/helpers/__tests__/validation.test.ts
+### Verification
 
-# Run tests matching a pattern
-npx vitest run -t "should reject invalid email"
-```
+- `npm test` passes: **5 test files, 84 tests, 0 failures**.
+- `npx tsc --noEmit` continues to pass with zero errors.
 
 ---
 
 ## Phase 4: Integration Tests — NOT STARTED
 
-### 4.1 Test database setup
+**Decision made:** Docker Compose will be used to provide the test database. The `docker-compose.yml` created here will be extended in Phase 5 to also include the app service for local development (see Phase 5.4), so the two phases share one file.
 
-Either:
-- **Docker Compose** with a Postgres service for testing, OR
-- **testcontainers** for ephemeral containers per test run
+### 4.1 Create `docker-compose.yml`
 
-Create test helpers for:
-- Running Drizzle migrations against test DB
-- Seeding test data
-- Cleanup between tests (truncate tables)
+Add a `db-test` Postgres service on a separate port (e.g. `5433`) to avoid collisions with a local dev database on the default `5432`:
 
-### 4.2 Write integration tests
+```yaml
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: picodb
+      POSTGRES_USER: pico
+      POSTGRES_PASSWORD: pico
+    ports:
+      - "5432:5432"
+
+  db-test:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: picodb_test
+      POSTGRES_USER: pico
+      POSTGRES_PASSWORD: pico
+    ports:
+      - "5433:5432"
+```
+
+The `app` service (for Phase 5 local dev) will be added to this file in Phase 5.4.
+
+### 4.2 Add `.env.test` integration overrides
+
+`.env.test` already exists from Phase 3 with a placeholder `DATABASE_URL`. Update it to point at the `db-test` service:
+
+```
+DATABASE_URL=postgres://pico:pico@localhost:5433/picodb_test
+```
+
+All other values in `.env.test` remain as-is.
+
+### 4.3 Create test DB helper utilities
+
+Create `src/test-utils/db.ts` with helpers used in `beforeAll`/`afterEach`/`afterAll` hooks:
+
+- **`setupTestDb()`** — connects to the test DB and runs all Drizzle migrations (`drizzle-kit migrate` equivalent, or programmatic migration via Drizzle's `migrate()` helper)
+- **`teardownTestDb()`** — closes the connection
+- **`truncateTables()`** — truncates `urls` and `users` between tests to ensure isolation (using `TRUNCATE users CASCADE` which cascades to `urls`)
+
+### 4.4 Create `vitest.integration.config.ts`
+
+Separate config with longer timeouts and scoped to the integration test directory:
+
+```ts
+export default defineConfig({
+    test: {
+        environment: 'node',
+        setupFiles: ['./src/test-setup.ts'],
+        include: ['tests/integration/**/*.test.ts'],
+        testTimeout: 15000,
+        hookTimeout: 30000,
+    },
+});
+```
+
+### 4.5 Write integration tests
+
+Create `tests/integration/` directory with three test files. These hit the real managers and database — no mocking.
 
 | Test File | Coverage |
 |---|---|
-| `tests/integration/auth.test.ts` | Full login flow against real Postgres |
-| `tests/integration/urls.test.ts` | Full URL lifecycle: create, read, update, delete, visit increment |
-| `tests/integration/users.test.ts` | Full user lifecycle, including cascade delete verification |
+| `tests/integration/auth.test.ts` | Register a user then log in; wrong password returns 400; non-existent user returns 400 |
+| `tests/integration/users.test.ts` | Full user lifecycle: create, get, update (name/email/password), delete; cascade delete removes associated URLs |
+| `tests/integration/urls.test.ts` | Full URL lifecycle: create (201), create same URL again (200/idempotent), get, getCount, update original, visit increment, delete (204/idempotent) |
 
-### 4.3 Separate config
+Each file follows this structure:
 
-Create `vitest.integration.config.ts` with longer timeouts and test DB setup.
+```ts
+beforeAll(async () => { await setupTestDb(); });
+afterAll(async () => { await teardownTestDb(); });
+afterEach(async () => { await truncateTables(); });
+```
+
+Integration tests call manager methods directly (not HTTP) — HTTP-layer integration (supertest) is out of scope for Phase 4.
+
+### 4.6 Add `test:integration` script to `package.json`
 
 ```json
 "test:integration": "vitest run --config vitest.integration.config.ts"
 ```
+
+### Running integration tests
+
+```bash
+# Start the test database
+docker compose up db-test -d
+
+# Run integration tests
+npm run test:integration
+
+# Stop the test database
+docker compose down
+```
+
+### Verification
+
+- All integration tests pass against a live `db-test` Postgres container.
+- `npm test` (unit tests) continues to pass independently with no database required.
 
 ---
 
@@ -285,11 +384,11 @@ Optional but recommended for DX. Would add:
 
 ## File Change Summary
 
-### Completed (Phases 1 & 2)
+### Completed (Phases 1, 2 & 3)
 
 | File | Status | Notes |
 |---|---|---|
-| `package.json` | Modified | Mongoose/mongo-sanitize removed; drizzle-orm, postgres, drizzle-kit added; `dev` script added |
+| `package.json` | Modified | Mongoose/mongo-sanitize removed; drizzle-orm, postgres, drizzle-kit added; `dev` script added; `test`, `test:watch`, `test:coverage` scripts added; `vitest` dev dep added |
 | `app.ts` | Modified | mongo-sanitize removed; `connectToDatabase` changed to named import |
 | `src/db/connect.ts` | Rewritten | postgres.js + Drizzle; named exports `db` and `connectToDatabase` |
 | `src/db/schema.ts` | Created | Drizzle table definitions for `users` and `urls` |
@@ -308,22 +407,31 @@ Optional but recommended for DX. Would add:
 | `src/controllers/urlsController.ts` | Modified | `shortUrl`/`originalUrl` → `short`/`original`; `_id` → `id`; new type imports |
 | `src/helpers/validation.ts` | Modified | Removed `picodeclarations` import; inline parameter types |
 | `src/middleware/verifyJWT.ts` | Modified | Import updated to `src/types/auth.js` |
-| `AGENTS.md` | Updated | Reflects full new stack |
-| `README.md` | Expanded | Getting-started guide, API table, Docker instructions |
+| `vitest.config.ts` | Created | Vitest config; node environment; `setupFiles` pointing at `src/test-setup.ts` |
+| `src/test-setup.ts` | Created | Loads `.env.test` via dotenv before each test file |
+| `.env.test` | Created | Safe placeholder env vars for unit tests; committed to repo |
+| `src/helpers/__tests__/validation.test.ts` | Created | 30 unit tests covering all 4 Joi schemas |
+| `src/middleware/__tests__/verifyJWT.test.ts` | Created | 5 unit tests for JWT middleware |
+| `src/controllers/__tests__/authController.test.ts` | Created | 6 unit tests for auth controller |
+| `src/controllers/__tests__/usersController.test.ts` | Created | 16 unit tests for users controller |
+| `src/controllers/__tests__/urlsController.test.ts` | Created | 27 unit tests for URLs controller |
+| `AGENTS.md` | Updated | Tests section and build/run commands updated to reflect Vitest setup |
+| `README.md` | Expanded | Getting-started guide, API table, Docker instructions, Testing section added |
 | `.env.example` | Created | Documents all required environment variables |
 
-### Pending (Phases 3–5)
+### Pending (Phases 4–5)
 
 | File | Action | Phase |
 |---|---|---|
-| `vitest.config.ts` | Create | 3 |
-| `src/controllers/__tests__/*.test.ts` | Create | 3 |
-| `src/helpers/__tests__/validation.test.ts` | Create | 3 |
-| `src/middleware/__tests__/verifyJWT.test.ts` | Create | 3 |
-| `vitest.integration.config.ts` | Create | 4 |
-| `tests/integration/*.test.ts` | Create | 4 |
-| `docker-compose.yml` | Create | 5 |
-| `package.json` | Modify — add test scripts | 3 |
-| `tsconfig.json` | Modify — bump target/module/moduleResolution | 5 |
+| `docker-compose.yml` | Create — `db` (dev) and `db-test` (integration tests) services | 4 |
+| `src/test-utils/db.ts` | Create — `setupTestDb`, `teardownTestDb`, `truncateTables` helpers | 4 |
+| `vitest.integration.config.ts` | Create — longer timeouts, scoped to `tests/integration/` | 4 |
+| `tests/integration/auth.test.ts` | Create | 4 |
+| `tests/integration/users.test.ts` | Create | 4 |
+| `tests/integration/urls.test.ts` | Create | 4 |
+| `package.json` | Modify — add `test:integration` script | 4 |
+| `.env.test` | Modify — update `DATABASE_URL` to point at `db-test` container | 4 |
+| `tsconfig.json` | Modify — bump `target` to `es2022`; switch `module`/`moduleResolution` to `NodeNext` | 5 |
+| `docker-compose.yml` | Modify — add `app` service for local dev (extends Phase 4 file) | 5 |
 | `Dockerfile` | Modify — add health check | 5 |
-| `AGENTS.md` | Modify — add test commands once Phase 3 is done | 3 |
+| `AGENTS.md` | Modify — add `test:integration` command and integration test notes | 4 |

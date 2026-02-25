@@ -62,6 +62,18 @@ npm run start
 
 Protected routes require an `Authorization: Bearer <token>` header.
 
+## Testing
+
+Unit tests use Vitest with mocked manager/DB layers — no database required.
+
+```bash
+npm test                  # run all tests once
+npm run test:watch        # watch mode
+npm run test:coverage     # with coverage report
+```
+
+Test environment variables are loaded from `.env.test`, which is committed with safe placeholder values.
+
 ## Docker
 
 ```bash
