@@ -221,58 +221,32 @@ Testing section added documenting the three test commands and the `.env.test` ap
 
 ---
 
-## Phase 4: Integration Tests — NOT STARTED
+## Phase 4: Integration Tests — COMPLETED
 
-**Decision made:** Docker Compose will be used to provide the test database. The `docker-compose.yml` created here will be extended in Phase 5 to also include the app service for local development (see Phase 5.4), so the two phases share one file.
+### What was done
 
-### 4.1 Create `docker-compose.yml`
+The integration tests use **supertest** to hit the Express HTTP layer end-to-end (routes → controllers → managers → real DB). The original plan said "manager-level, no HTTP" but the decision was revised to HTTP-layer only for more realistic coverage.
 
-Add a `db-test` Postgres service on a separate port (e.g. `5433`) to avoid collisions with a local dev database on the default `5432`:
+#### Key implementation decisions / discoveries
 
-```yaml
-services:
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_DB: picodb
-      POSTGRES_USER: pico
-      POSTGRES_PASSWORD: pico
-    ports:
-      - "5432:5432"
+- `src/app.ts` split from `server.ts`: `src/app.ts` exports the configured Express app (no listen); `server.ts` is the new entry point that connects the DB and calls `app.listen`.
+- `src/test-utils/db.ts` uses its own dedicated postgres client (isolated from the app's `connect.ts` singleton) so test teardown doesn't affect the app connection pool.
+- `vitest.integration.config.ts` uses `fileParallelism: false` (sequential file execution) — running files in parallel caused a race condition where multiple files each created their own postgres client and tried to run `migrate()` concurrently, colliding on `CREATE SCHEMA "drizzle"`.
+- `vitest.config.ts` was updated to add `exclude: ['tests/integration/**', 'node_modules/**']` so `npm test` never picks up integration test files or requires a database.
+- Postgres emits harmless `NOTICE` messages to stdout during tests (e.g. `truncate cascades to table "urls"`, `schema "drizzle" already exists, skipping`) — these are not errors.
 
-  db-test:
-    image: postgres:17
-    environment:
-      POSTGRES_DB: picodb_test
-      POSTGRES_USER: pico
-      POSTGRES_PASSWORD: pico
-    ports:
-      - "5433:5432"
-```
+#### `src/app.ts` + `server.ts` — app/entry point split
 
-The `app` service (for Phase 5 local dev) will be added to this file in Phase 5.4.
+- `src/app.ts`: Express app configuration (middleware, routes). Exported as default. No `listen`.
+- `server.ts`: Calls `connectToDatabase()` then `app.listen(PORT)`. `package.json` `start` and `dev` scripts updated accordingly.
 
-### 4.2 Add `.env.test` integration overrides
+#### `src/test-utils/db.ts` — created
 
-`.env.test` already exists from Phase 3 with a placeholder `DATABASE_URL`. Update it to point at the `db-test` service:
+- `setupTestDb()`: Creates a dedicated postgres client + Drizzle instance, runs `migrate()` against the test DB.
+- `teardownTestDb()`: Calls `client.end()` to close the test client.
+- `truncateTables()`: Executes `TRUNCATE users CASCADE` to wipe both tables between tests.
 
-```
-DATABASE_URL=postgres://pico:pico@localhost:5433/picodb_test
-```
-
-All other values in `.env.test` remain as-is.
-
-### 4.3 Create test DB helper utilities
-
-Create `src/test-utils/db.ts` with helpers used in `beforeAll`/`afterEach`/`afterAll` hooks:
-
-- **`setupTestDb()`** — connects to the test DB and runs all Drizzle migrations (`drizzle-kit migrate` equivalent, or programmatic migration via Drizzle's `migrate()` helper)
-- **`teardownTestDb()`** — closes the connection
-- **`truncateTables()`** — truncates `urls` and `users` between tests to ensure isolation (using `TRUNCATE users CASCADE` which cascades to `urls`)
-
-### 4.4 Create `vitest.integration.config.ts`
-
-Separate config with longer timeouts and scoped to the integration test directory:
+#### `vitest.integration.config.ts` — created
 
 ```ts
 export default defineConfig({
@@ -282,53 +256,27 @@ export default defineConfig({
         include: ['tests/integration/**/*.test.ts'],
         testTimeout: 15000,
         hookTimeout: 30000,
+        fileParallelism: false,
     },
 });
 ```
 
-### 4.5 Write integration tests
+#### `vitest.config.ts` — updated
 
-Create `tests/integration/` directory with three test files. These hit the real managers and database — no mocking.
+Added `exclude: ['tests/integration/**', 'node_modules/**']` to prevent `npm test` from picking up integration test files.
 
-| Test File | Coverage |
-|---|---|
-| `tests/integration/auth.test.ts` | Register a user then log in; wrong password returns 400; non-existent user returns 400 |
-| `tests/integration/users.test.ts` | Full user lifecycle: create, get, update (name/email/password), delete; cascade delete removes associated URLs |
-| `tests/integration/urls.test.ts` | Full URL lifecycle: create (201), create same URL again (200/idempotent), get, getCount, update original, visit increment, delete (204/idempotent) |
+#### Integration test files — created (45 tests across 3 files)
 
-Each file follows this structure:
-
-```ts
-beforeAll(async () => { await setupTestDb(); });
-afterAll(async () => { await teardownTestDb(); });
-afterEach(async () => { await truncateTables(); });
-```
-
-Integration tests call manager methods directly (not HTTP) — HTTP-layer integration (supertest) is out of scope for Phase 4.
-
-### 4.6 Add `test:integration` script to `package.json`
-
-```json
-"test:integration": "vitest run --config vitest.integration.config.ts"
-```
-
-### Running integration tests
-
-```bash
-# Start the test database
-docker compose up db-test -d
-
-# Run integration tests
-npm run test:integration
-
-# Stop the test database
-docker compose down
-```
+| Test File | Tests | Coverage |
+|---|---|---|
+| `tests/integration/auth.test.ts` | 6 | POST /api/auth — valid login, wrong password, non-existent user, missing fields, invalid email format |
+| `tests/integration/users.test.ts` | 16 | POST/GET/PATCH/DELETE /api/users — full user lifecycle, cascade delete, auth enforcement |
+| `tests/integration/urls.test.ts` | 23 | POST/GET/PATCH/DELETE /api/urls — full URL lifecycle, idempotency, visit increment, ownership enforcement |
 
 ### Verification
 
-- All integration tests pass against a live `db-test` Postgres container.
-- `npm test` (unit tests) continues to pass independently with no database required.
+- All 45 integration tests pass against a live `db-test` Postgres container.
+- `npm test` (unit tests, 84 tests) continues to pass independently with no database required.
 
 ---
 
@@ -339,9 +287,9 @@ docker compose down
 - Bump `target` to `es2022`
 - Switch `module` and `moduleResolution` to `NodeNext` (modern Node ESM best practice)
 
-### 5.2 Update AGENTS.md — ALREADY DONE in Phase 2
+### 5.2 Keep AGENTS.md up to date
 
-AGENTS.md was fully updated during Phase 2 to reflect the Drizzle/Postgres stack, new env vars, migration commands, and updated architecture. Only needs touching again if Phase 3–5 introduce new commands or conventions.
+AGENTS.md is updated at the end of each phase to reflect new commands, structure, and conventions. No further updates are needed for Phase 5 unless new commands or patterns are introduced.
 
 ### 5.3 Update Dockerfile
 
@@ -349,9 +297,9 @@ The base image is already `node:24`. Remaining tasks:
 - Add a health check endpoint (e.g. `GET /health`) to the Express app
 - Add a `HEALTHCHECK` instruction to the Dockerfile if desired
 
-### 5.4 Add docker-compose.yml
+### 5.4 Extend docker-compose.yml — add app service
 
-For local development with Postgres:
+`docker-compose.yml` already exists from Phase 4 with `db` and `db-test` services. Add an `app` service for local development:
 
 ```yaml
 services:
@@ -384,7 +332,7 @@ Optional but recommended for DX. Would add:
 
 ## File Change Summary
 
-### Completed (Phases 1, 2 & 3)
+### Completed (Phases 1, 2, 3 & 4)
 
 | File | Status | Notes |
 |---|---|---|
@@ -418,20 +366,23 @@ Optional but recommended for DX. Would add:
 | `AGENTS.md` | Updated | Tests section and build/run commands updated to reflect Vitest setup |
 | `README.md` | Expanded | Getting-started guide, API table, Docker instructions, Testing section added |
 | `.env.example` | Created | Documents all required environment variables |
+| `server.ts` | Created | New entry point (connects DB + listens); replaces root `app.ts` as entry |
+| `src/app.ts` | Created | Exported Express app (no listen); split from old root `app.ts` |
+| `docker-compose.yml` | Created | `db` (dev, port 5432) and `db-test` (integration tests, port 5433) Postgres 17 services |
+| `src/test-utils/db.ts` | Created | `setupTestDb`, `teardownTestDb`, `truncateTables` helpers for integration tests |
+| `vitest.integration.config.ts` | Created | `fileParallelism: false`, 15s/30s timeouts, scoped to `tests/integration/` |
+| `vitest.config.ts` | Updated | Added `exclude: ['tests/integration/**', 'node_modules/**']` |
+| `tests/integration/auth.test.ts` | Created | 6 integration tests — POST /api/auth |
+| `tests/integration/users.test.ts` | Created | 16 integration tests — POST/GET/PATCH/DELETE /api/users |
+| `tests/integration/urls.test.ts` | Created | 23 integration tests — full URL lifecycle |
+| `package.json` | Modified | `main` → `server.js`; `start` → `node dist/server.js`; `dev` → `tsx watch server.ts`; `test:integration` script added; `supertest` + `@types/supertest` dev deps added |
+| `.env.test` | Modified | `DATABASE_URL` updated to point at `db-test` container (port 5433) |
+| `Dockerfile` | Modified | `CMD` updated to `node dist/server.js` |
 
-### Pending (Phases 4–5)
+### Pending (Phase 5)
 
 | File | Action | Phase |
 |---|---|---|
-| `docker-compose.yml` | Create — `db` (dev) and `db-test` (integration tests) services | 4 |
-| `src/test-utils/db.ts` | Create — `setupTestDb`, `teardownTestDb`, `truncateTables` helpers | 4 |
-| `vitest.integration.config.ts` | Create — longer timeouts, scoped to `tests/integration/` | 4 |
-| `tests/integration/auth.test.ts` | Create | 4 |
-| `tests/integration/users.test.ts` | Create | 4 |
-| `tests/integration/urls.test.ts` | Create | 4 |
-| `package.json` | Modify — add `test:integration` script | 4 |
-| `.env.test` | Modify — update `DATABASE_URL` to point at `db-test` container | 4 |
 | `tsconfig.json` | Modify — bump `target` to `es2022`; switch `module`/`moduleResolution` to `NodeNext` | 5 |
 | `docker-compose.yml` | Modify — add `app` service for local dev (extends Phase 4 file) | 5 |
 | `Dockerfile` | Modify — add health check | 5 |
-| `AGENTS.md` | Modify — add `test:integration` command and integration test notes | 4 |

@@ -12,10 +12,10 @@ ESM module system (`"type": "module"` in package.json).
 npm run build          # runs: npx tsc
 
 # Start (run compiled output)
-npm run start          # runs: node dist/app.js
+npm run start          # runs: node dist/server.js
 
 # Dev server with file watching (HMR)
-npm run dev            # runs: tsx watch app.ts
+npm run dev            # runs: tsx watch server.ts
 
 # Type-check without emitting
 npx tsc --noEmit
@@ -28,6 +28,9 @@ npm run test:watch      # runs: vitest
 
 # Run tests with coverage
 npm run test:coverage   # runs: vitest run --coverage
+
+# Run integration tests (requires db-test Docker container on port 5433)
+npm run test:integration  # runs: vitest run --config vitest.integration.config.ts
 ```
 
 ## Database Migrations
@@ -61,6 +64,37 @@ src/controllers/__tests__/urlsController.test.ts
 Environment variables for tests are loaded from `.env.test` via a Vitest setup file (`src/test-setup.ts`).
 `.env.test` must exist at the project root (copy `.env.test` is committed with safe placeholder values — do not use real secrets).
 
+### Integration Tests
+
+Integration tests use **supertest** to hit the Express HTTP layer end-to-end (routes → controllers → managers → real Postgres DB). No mocking.
+
+Test files live in `tests/integration/`:
+
+```
+tests/integration/auth.test.ts    # 6 tests — POST /api/auth
+tests/integration/users.test.ts   # 16 tests — POST/GET/PATCH/DELETE /api/users
+tests/integration/urls.test.ts    # 23 tests — full URL lifecycle
+```
+
+Integration tests require the `db-test` Docker container (Postgres 17, port 5433):
+
+```bash
+# Start the test database
+docker compose up db-test -d
+
+# Run integration tests
+npm run test:integration
+
+# Stop the test database
+docker compose down
+```
+
+Key implementation notes:
+- `src/test-utils/db.ts` provides `setupTestDb()` (runs Drizzle migrations), `teardownTestDb()` (closes connection), and `truncateTables()` (`TRUNCATE users CASCADE`) helpers used in `beforeAll`/`afterAll`/`afterEach` hooks.
+- `vitest.integration.config.ts` uses `fileParallelism: false` (sequential file execution) to prevent concurrent migration race conditions.
+- `tests/integration/**` is excluded from the default `vitest.config.ts` so `npm test` never requires a database.
+- Postgres emits harmless `NOTICE` messages to stdout during tests (e.g. cascade notices, schema already exists) — these are not errors.
+
 ## Linting / Formatting
 
 **No linting or formatting tools are configured** (no ESLint, Prettier, or EditorConfig).
@@ -69,10 +103,12 @@ Follow the existing code style conventions described below.
 ## Project Structure
 
 ```
-app.ts                        # Entry point: Express setup, middleware, routes, server start
-drizzle.config.ts             # Drizzle Kit configuration
-drizzle/                      # Generated SQL migration files
+server.ts                             # Entry point: connects DB and starts listening
 src/
+├── app.ts                            # Express app setup (exported, no listen)
+├── test-setup.ts                     # Loads .env.test for unit tests
+├── test-utils/
+│   └── db.ts                         # setupTestDb, teardownTestDb, truncateTables (integration tests)
 ├── controllers/              # Request handlers (business logic + HTTP responses)
 │   ├── authController.ts     # Login/auth: JWT token generation
 │   ├── urlsController.ts     # CRUD for shortened URLs
@@ -95,6 +131,13 @@ src/
     ├── auth.ts               # RequestUser interface (for JWT-authenticated requests)
     ├── url.ts                # UrlSelect, UrlInsert (derived from Drizzle schema)
     └── user.ts               # UserSelect, UserPublic, UserInsert, UpdatedUser (derived from Drizzle schema)
+drizzle.config.ts             # Drizzle Kit configuration
+drizzle/                      # Generated SQL migration files
+tests/
+└── integration/
+    ├── auth.test.ts          # 6 integration tests — POST /api/auth
+    ├── users.test.ts         # 16 integration tests — POST/GET/PATCH/DELETE /api/users
+    └── urls.test.ts          # 23 integration tests — full URL lifecycle
 ```
 
 ## Architecture
@@ -185,7 +228,7 @@ Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Schema**.
   ```
 - JWT-authenticated request user is accessed via type assertion:
   ```ts
-  (req as Request & RequestUser).user._id
+  (req as Request & RequestUser).user.id
   ```
 - Environment variables are cast with `as string`:
   ```ts
@@ -212,7 +255,7 @@ Copy `.env.example` to `.env` and fill in your values before running the server.
 ## Dependencies
 
 **Runtime:** express (v5), drizzle-orm, postgres, cors, dotenv, bcrypt, jsonwebtoken, joi, nanoid (v5, ESM-only).
-**Dev:** typescript (v5), tsx (watch mode / HMR), drizzle-kit, @types/node, @types/express, @types/bcrypt, @types/cors, @types/jsonwebtoken.
+**Dev:** typescript (v5), tsx (watch mode / HMR), drizzle-kit, vitest, supertest, @types/node, @types/express, @types/bcrypt, @types/cors, @types/jsonwebtoken, @types/supertest.
 
 ### Express 5 Notes
 
@@ -228,4 +271,4 @@ docker build -t pico-url-backend .
 docker run -p 4242:4242 --env-file .env pico-url-backend
 ```
 
-Base image: `node:18`. Build runs `npm install` then `npm run build`. Entry: `node dist/app.js`.
+Base image: `node:18`. Build runs `npm install` then `npm run build`. Entry: `node dist/server.js`.
