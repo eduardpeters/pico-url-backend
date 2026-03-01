@@ -284,55 +284,63 @@ Added `exclude: ['tests/integration/**', 'node_modules/**']` to prevent `npm tes
 
 ---
 
-## Phase 5: Final Cleanup & DX Polish — NOT STARTED
+## Phase 5: Final Cleanup & DX Polish — COMPLETED
 
-### 5.1 Update tsconfig.json
+### What was done
 
-- Bump `target` to `es2022`
-- Switch `module` and `moduleResolution` to `NodeNext` (modern Node ESM best practice)
+#### `tsconfig.json` — updated
 
-### 5.2 Keep AGENTS.md up to date
+- `target` bumped from `es2020` to `es2022`
+- `module` changed from `ESNext` to `NodeNext`
+- `moduleResolution` changed from `node` to `NodeNext`
+- File re-indented to 4 spaces for consistency with the rest of the codebase
 
-AGENTS.md is updated at the end of each phase to reflect new commands, structure, and conventions. No further updates are needed for Phase 5 unless new commands or patterns are introduced.
+#### `src/app.ts` — updated
 
-### 5.3 Update Dockerfile
+Added a `GET /health` endpoint returning `200 OK`, required by the Dockerfile `HEALTHCHECK`.
 
-The base image is already `node:24`. Remaining tasks:
+#### `Dockerfile` — updated
 
-- Add a health check endpoint (e.g. `GET /health`) to the Express app
-- Add a `HEALTHCHECK` instruction to the Dockerfile if desired
+- Added a `HEALTHCHECK` instruction that polls `GET /health` every 30 s (5 s timeout, 10 s start period, 3 retries)
+- Converted to a **multi-stage build**: a `builder` stage installs all dependencies and compiles TypeScript; a `production` stage installs only production dependencies (`npm ci --omit=dev`) and copies `dist/` and `drizzle/` only, keeping the final image lean
+- `package.json` `build` script simplified from `npx tsc` to `tsc`
 
-### 5.4 Extend docker-compose.yml — add app service
+#### `docker-compose.yml` — updated
 
-`docker-compose.yml` already exists from Phase 4 with `db` and `db-test` services. Add an `app` service for local development:
+- Added `app` service: builds from the local Dockerfile, maps port `4242:4242`, depends on `db` with `condition: service_healthy` so it waits for Postgres readiness before starting
+- Added `healthcheck` to the `db` service (`pg_isready`) to support the above dependency condition
+- `app` service given an explicit `DATABASE_URL` environment variable using the `db` service name as the host
+- Re-indented to 4 spaces
 
-```yaml
-services:
-    db:
-        image: postgres:17
-        environment:
-            POSTGRES_DB: picodb
-            POSTGRES_USER: pico
-            POSTGRES_PASSWORD: pico
-        ports:
-            - '5432:5432'
-    app:
-        build: .
-        ports:
-            - '4242:4242'
-        depends_on:
-            - db
-        env_file:
-            - .env
-```
+#### ESLint + Prettier — added
 
-### 5.5 Consider adding ESLint + Prettier
+- **`.prettierrc`** created: 4-space indent, single quotes, semicolons, trailing commas, 100-char print width
+- **`eslint.config.js`** created: ESLint 10 flat config with `@typescript-eslint` recommended rules, `eslint-config-prettier` integration, and `no-unused-vars` configured to ignore `_`-prefixed identifiers (variables, args, and caught errors)
+- **`package.json`**: `"lint": "eslint ."` and `"format": "prettier --write ."` scripts added; `eslint`, `typescript-eslint`, `eslint-config-prettier`, and `prettier` added as dev dependencies
+- All existing source files re-formatted by Prettier
 
-Optional but recommended for DX. Would add:
+#### `server.ts` — updated
 
-- `eslint` + `@typescript-eslint/parser` + `@typescript-eslint/eslint-plugin`
-- `prettier` + `eslint-config-prettier`
-- npm scripts: `"lint": "eslint ."`, `"format": "prettier --write ."`
+- Switched dotenv loading from an explicit `dotenv.config()` call to `import 'dotenv/config'`
+- `app.listen` now binds to `0.0.0.0` (required for the server to be reachable from outside a Docker container)
+- `PORT` env var cast to `Number` for `app.listen`
+
+#### `src/db/connect.ts` — updated
+
+`connectToDatabase()` now runs Drizzle `migrate()` automatically on startup, applying any pending migrations from `./drizzle` before the server starts accepting requests. The `drizzle/` folder is copied into the production Docker image to support this.
+
+#### `AGENTS.md` — updated
+
+Reflects all Phase 5 additions: ESLint/Prettier commands and config notes, health endpoint, updated docker-compose structure with the `app` service, and migrations-on-startup behaviour.
+
+### Verification
+
+- `npx tsc --noEmit` passes with zero errors under `NodeNext` module resolution.
+- `npm test` (84 unit tests) continues to pass.
+- `npm run lint` passes with zero errors on all source files.
+- `npm run format` runs cleanly.
+- Docker image builds successfully with the multi-stage Dockerfile.
+- `docker compose up` starts the full stack (`db` → `app`) with health-check gating.
 
 ---
 
@@ -385,10 +393,17 @@ Optional but recommended for DX. Would add:
 | `.env.test`                                         | Modified  | `DATABASE_URL` updated to point at `db-test` container (port 5433)                                                                                                         |
 | `Dockerfile`                                        | Modified  | `CMD` updated to `node dist/server.js`                                                                                                                                     |
 
-### Pending (Phase 5)
+### Completed (Phase 5)
 
-| File                 | Action                                                                               | Phase |
-| -------------------- | ------------------------------------------------------------------------------------ | ----- |
-| `tsconfig.json`      | Modify — bump `target` to `es2022`; switch `module`/`moduleResolution` to `NodeNext` | 5     |
-| `docker-compose.yml` | Modify — add `app` service for local dev (extends Phase 4 file)                      | 5     |
-| `Dockerfile`         | Modify — add health check                                                            | 5     |
+| File                 | Status   | Notes                                                                                                                                                     |
+| -------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tsconfig.json`      | Modified | `target` → `es2022`; `module`/`moduleResolution` → `NodeNext`; re-indented to 4 spaces                                                                    |
+| `src/app.ts`         | Modified | `GET /health` endpoint added                                                                                                                              |
+| `Dockerfile`         | Modified | `HEALTHCHECK` added; converted to multi-stage build (`builder` + `production`)                                                                            |
+| `docker-compose.yml` | Modified | `app` service added; `db` healthcheck added; `app` given explicit `DATABASE_URL`; re-indented                                                             |
+| `.prettierrc`        | Created  | Prettier config: 4-space indent, single quotes, semicolons, trailing commas, 100-char print width                                                         |
+| `eslint.config.js`   | Created  | ESLint 10 flat config: `typescript-eslint` recommended, `eslint-config-prettier`, `_`-prefix ignores                                                      |
+| `package.json`       | Modified | `lint` and `format` scripts added; `eslint`, `typescript-eslint`, `eslint-config-prettier`, `prettier` dev deps added; `build` script simplified to `tsc` |
+| `server.ts`          | Modified | Switched to `import 'dotenv/config'`; `app.listen` binds to `0.0.0.0`; `PORT` cast to `Number`                                                            |
+| `src/db/connect.ts`  | Modified | `connectToDatabase()` now runs `migrate()` on startup to apply pending Drizzle migrations                                                                 |
+| `AGENTS.md`          | Updated  | Reflects Phase 5 additions: ESLint/Prettier, health endpoint, docker-compose app service, migrations on startup                                           |
