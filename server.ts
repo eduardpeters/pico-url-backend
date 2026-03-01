@@ -1,15 +1,13 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import app from './src/app.js';
 import { connectToDatabase } from './src/db/connect.js';
 
-dotenv.config();
-
-const port = process.env.PORT;
+const port = Number(process.env.PORT);
 
 (async function startServer() {
     try {
         await connectToDatabase();
-        app.listen(port, (error?: Error) => {
+        app.listen(port, '0.0.0.0', (error?: Error) => {
             if (error) {
                 console.error(error);
                 return;
