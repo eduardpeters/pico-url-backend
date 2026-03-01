@@ -20,4 +20,4 @@ COPY . .
 RUN npm run build
 
 EXPOSE 4242
-CMD [ "node", "dist/app.js" ]
+CMD [ "node", "dist/server.js" ]

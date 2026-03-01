@@ -2,14 +2,15 @@
   "name": "pico-url-backend",
   "version": "1.0.0",
   "description": "An URL shortener API",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/app.js",
-    "dev": "tsx watch app.ts",
+    "start": "node dist/server.js",
+    "dev": "tsx watch server.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "repository": {
     "type": "git",
@@ -40,7 +41,9 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.0.0",
+    "@types/supertest": "^7.2.0",
     "drizzle-kit": "^0.31.9",
+    "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

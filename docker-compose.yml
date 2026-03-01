@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: picodb
+      POSTGRES_USER: pico
+      POSTGRES_PASSWORD: pico
+    ports:
+      - "5432:5432"
+
+  db-test:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: picodb_test
+      POSTGRES_USER: pico
+      POSTGRES_PASSWORD: pico
+    ports:
+      - "5433:5432"
