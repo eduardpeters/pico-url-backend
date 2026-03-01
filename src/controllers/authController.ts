@@ -19,17 +19,17 @@ async function authorizeUser(req: Request, res: Response) {
     if (!user) {
         return res.status(400).send('Incorrect email or password');
     }
-    const validPassword = await bcrypt.compare(req.body.password, user.password);
+    const validPassword = await bcrypt.compare(req.body.password, user.hashedPassword);
     if (!validPassword) {
         return res.status(400).send('Incorrect email or password');
     }
-    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET as string, { expiresIn: 3600 });
+    const token = jwt.sign({ _id: user.id }, process.env.JWT_SECRET as string, { expiresIn: 3600 });
     return res.status(200).json({
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
-        token: token
+        token: token,
     });
 }
 
-export default { authorizeUser }
+export default { authorizeUser };

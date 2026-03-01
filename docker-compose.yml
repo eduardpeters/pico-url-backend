@@ -1,0 +1,39 @@
+services:
+    db:
+        image: postgres:17
+        environment:
+            # Example values — replace with your own credentials in production
+            POSTGRES_DB: picodb
+            POSTGRES_USER: pico
+            POSTGRES_PASSWORD: pico
+        ports:
+            - '5432:5432'
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U pico -d picodb']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    db-test:
+        image: postgres:17
+        environment:
+            # Example values — replace with your own credentials in production
+            POSTGRES_DB: picodb_test
+            POSTGRES_USER: pico
+            POSTGRES_PASSWORD: pico
+        ports:
+            - '5433:5432'
+
+    app:
+        build: .
+        ports:
+            - '4242:4242'
+        depends_on:
+            db:
+                condition: service_healthy
+        env_file:
+            - .env
+        environment:
+            # Must match the db service credentials and use the service name as host
+            # Example: postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@db:5432/<POSTGRES_DB>
+            DATABASE_URL: postgresql://pico:pico@db:5432/picodb

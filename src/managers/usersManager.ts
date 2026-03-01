@@ -1,59 +1,49 @@
-import User from '../models/user.js';
-import { UserInterface } from '../types/picodeclarations.js';
-import { UpdatedUserInterface } from '../types/picodeclarations.js';
+import { eq } from 'drizzle-orm';
+import { db } from '../db/connect.js';
+import { users } from '../db/schema.js';
+import type { UserInsert, UserPublic, UserSelect, UpdatedUser } from '../types/user.js';
 
 class usersManager {
-    static async getByEmail(email: string) {
-        const user = await User.findOne({ email: email }).lean();
-        if (user) {
-            return userDocumentToObject(user);
-        }
-        return user;
+    static async getByEmail(email: string): Promise<UserSelect | undefined> {
+        const results = await db.select().from(users).where(eq(users.email, email));
+        return results[0];
     }
 
-    static async getById(id: string) {
-        const user = await User.findById(id).lean();
-        if (user) {
-            return userDocumentToPasswordlessObject(user);
-        }
-        return user;
+    static async getById(id: string): Promise<UserPublic | undefined> {
+        const results = await db
+            .select({
+                id: users.id,
+                name: users.name,
+                email: users.email,
+                created: users.created,
+            })
+            .from(users)
+            .where(eq(users.id, id));
+        return results[0];
     }
 
-    static async deleteUser(id: string) {
-        await User.deleteOne({ _id: id });
-    }
-
-    static async createUser(newUser: UserInterface) {
-        const user = new User({
-            name: newUser.name,
-            email: newUser.email,
-            password: newUser.password
+    static async createUser(newUser: UserInsert): Promise<UserPublic> {
+        const results = await db.insert(users).values(newUser).returning({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            created: users.created,
         });
-        await user.save();
-        return userDocumentToPasswordlessObject(user);
+        return results[0];
     }
 
-    static async updateUser(id: string, updatedUser: UpdatedUserInterface) {
-        const user = await User.findByIdAndUpdate(id, updatedUser, { returnDocument: "after" }).lean();
-        if (user) {
-            return userDocumentToPasswordlessObject(user);
-        }
-        return user;
+    static async updateUser(id: string, updatedUser: UpdatedUser): Promise<UserPublic | undefined> {
+        const results = await db.update(users).set(updatedUser).where(eq(users.id, id)).returning({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            created: users.created,
+        });
+        return results[0];
     }
-}
 
-function userDocumentToObject(userDocument: UserInterface) {
-    return {
-        ...userDocument,
-        _id: userDocument._id?.toString()
-    }
-}
-
-function userDocumentToPasswordlessObject(userDocument: UserInterface) {
-    return {
-        _id: userDocument._id?.toString(),
-        name: userDocument.name,
-        email: userDocument.email,
+    static async deleteUser(id: string): Promise<void> {
+        await db.delete(users).where(eq(users.id, id));
     }
 }
 
