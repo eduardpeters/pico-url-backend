@@ -1,51 +1,60 @@
 {
-  "name": "pico-url-backend",
-  "version": "1.0.0",
-  "description": "An URL shortener API",
-  "main": "server.js",
-  "scripts": {
-    "build": "npx tsc",
-    "start": "node dist/server.js",
-    "dev": "tsx watch server.ts",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/eduardpeters/pico-url-backend.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/eduardpeters/pico-url-backend/issues"
-  },
-  "homepage": "https://github.com/eduardpeters/pico-url-backend#readme",
-  "type": "module",
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
-    "drizzle-orm": "^0.45.1",
-    "express": "^5.2.1",
-    "joi": "^18.0.2",
-    "jsonwebtoken": "^9.0.3",
-    "nanoid": "^5.1.6",
-    "postgres": "^3.4.8"
-  },
-  "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.0.0",
-    "@types/supertest": "^7.2.0",
-    "drizzle-kit": "^0.31.9",
-    "supertest": "^7.2.2",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
-  }
+    "name": "pico-url-backend",
+    "version": "1.0.0",
+    "description": "An URL shortener API",
+    "main": "server.js",
+    "scripts": {
+        "build": "npx tsc",
+        "start": "node dist/server.js",
+        "dev": "tsx watch server.ts",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "test:integration": "vitest run --config vitest.integration.config.ts",
+        "lint": "eslint .",
+        "format": "prettier --write ."
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/eduardpeters/pico-url-backend.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/eduardpeters/pico-url-backend/issues"
+    },
+    "homepage": "https://github.com/eduardpeters/pico-url-backend#readme",
+    "type": "module",
+    "dependencies": {
+        "bcrypt": "^6.0.0",
+        "cors": "^2.8.6",
+        "dotenv": "^17.3.1",
+        "drizzle-orm": "^0.45.1",
+        "express": "^5.2.1",
+        "joi": "^18.0.2",
+        "jsonwebtoken": "^9.0.3",
+        "nanoid": "^5.1.6",
+        "postgres": "^3.4.8"
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@types/bcrypt": "^6.0.0",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^24.0.0",
+        "@types/supertest": "^7.2.0",
+        "@typescript-eslint/eslint-plugin": "^8.56.1",
+        "@typescript-eslint/parser": "^8.56.1",
+        "drizzle-kit": "^0.31.9",
+        "eslint": "^10.0.2",
+        "eslint-config-prettier": "^10.1.8",
+        "prettier": "^3.8.1",
+        "supertest": "^7.2.2",
+        "tsx": "^4.21.0",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.56.1",
+        "vitest": "^4.0.18"
+    }
 }

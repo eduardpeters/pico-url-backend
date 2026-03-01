@@ -2,16 +2,16 @@
 
 ## Decisions Made
 
-| Decision | Choice |
-|---|---|
-| ORM | Drizzle ORM |
-| DB Driver | postgres.js (`postgres` npm package) |
-| Primary Keys | UUID with `defaultRandom()` |
-| Cascade | `ON DELETE CASCADE` for user -> urls FK |
-| Test Framework | Vitest |
-| Test Strategy | Unit tests (mocked DB) + Integration tests (real Postgres) |
-| Dev Server / HMR | `tsx watch` |
-| Dependency Updates | All bumped to latest, including major versions |
+| Decision           | Choice                                                     |
+| ------------------ | ---------------------------------------------------------- |
+| ORM                | Drizzle ORM                                                |
+| DB Driver          | postgres.js (`postgres` npm package)                       |
+| Primary Keys       | UUID with `defaultRandom()`                                |
+| Cascade            | `ON DELETE CASCADE` for user -> urls FK                    |
+| Test Framework     | Vitest                                                     |
+| Test Strategy      | Unit tests (mocked DB) + Integration tests (real Postgres) |
+| Dev Server / HMR   | `tsx watch`                                                |
+| Dependency Updates | All bumped to latest, including major versions             |
 
 ---
 
@@ -21,25 +21,25 @@ All dependencies bumped to latest. `tsx` added for HMR dev server.
 
 ### Dependency Versions (current)
 
-| Package | Version | Notes |
-|---|---|---|
-| `express` | ^5.2.1 | Upgraded from v4 |
-| `@types/express` | ^5.0.6 | Matches Express 5 |
-| `bcrypt` | ^6.0.0 | Upgraded from v5 |
-| `@types/bcrypt` | ^6.0.0 | Matches bcrypt 6 |
-| `cors` | ^2.8.6 | Patch bump |
-| `@types/cors` | ^2.8.19 | Patch bump |
-| `dotenv` | ^17.3.1 | Upgraded from v16 |
-| `joi` | ^18.0.2 | Upgraded from v17 |
-| `jsonwebtoken` | ^9.0.3 | Patch bump |
-| `@types/jsonwebtoken` | ^9.0.10 | Patch bump |
-| `nanoid` | ^5.1.6 | Upgraded from v4 |
-| `@types/node` | ^24.0.0 | Upgraded from v18 |
-| `typescript` | ^5.9.3 | Upgraded from v4 |
-| `tsx` | ^4.21.0 | **New** — dev dependency |
-| `drizzle-orm` | ^0.45.1 | **New** — added in Phase 2 |
-| `postgres` | ^3.4.8 | **New** — added in Phase 2 |
-| `drizzle-kit` | ^0.31.9 | **New** — dev dependency, added in Phase 2 |
+| Package               | Version | Notes                                      |
+| --------------------- | ------- | ------------------------------------------ |
+| `express`             | ^5.2.1  | Upgraded from v4                           |
+| `@types/express`      | ^5.0.6  | Matches Express 5                          |
+| `bcrypt`              | ^6.0.0  | Upgraded from v5                           |
+| `@types/bcrypt`       | ^6.0.0  | Matches bcrypt 6                           |
+| `cors`                | ^2.8.6  | Patch bump                                 |
+| `@types/cors`         | ^2.8.19 | Patch bump                                 |
+| `dotenv`              | ^17.3.1 | Upgraded from v16                          |
+| `joi`                 | ^18.0.2 | Upgraded from v17                          |
+| `jsonwebtoken`        | ^9.0.3  | Patch bump                                 |
+| `@types/jsonwebtoken` | ^9.0.10 | Patch bump                                 |
+| `nanoid`              | ^5.1.6  | Upgraded from v4                           |
+| `@types/node`         | ^24.0.0 | Upgraded from v18                          |
+| `typescript`          | ^5.9.3  | Upgraded from v4                           |
+| `tsx`                 | ^4.21.0 | **New** — dev dependency                   |
+| `drizzle-orm`         | ^0.45.1 | **New** — added in Phase 2                 |
+| `postgres`            | ^3.4.8  | **New** — added in Phase 2                 |
+| `drizzle-kit`         | ^0.31.9 | **New** — dev dependency, added in Phase 2 |
 
 ### Code Changes Made
 
@@ -64,6 +64,7 @@ Replaced Mongoose with Drizzle ORM + postgres.js. All MongoDB-specific code remo
 ### What was done
 
 #### Dependencies
+
 - Installed: `drizzle-orm`, `postgres` (runtime); `drizzle-kit` (dev)
 - Removed: `mongoose`, `express-mongo-sanitize`
 
@@ -72,6 +73,7 @@ Replaced Mongoose with Drizzle ORM + postgres.js. All MongoDB-specific code remo
 Drizzle table definitions. TypeScript property names are camelCase; SQL column names are snake_case via the `name` option.
 
 **`users` table:**
+
 ```
 id              uuid          PRIMARY KEY, defaultRandom()
 name            varchar(50)   NOT NULL
@@ -81,6 +83,7 @@ created         timestamp     DEFAULT now()
 ```
 
 **`urls` table:**
+
 ```
 id       uuid         PRIMARY KEY, defaultRandom()
 userId   uuid         NOT NULL, REFERENCES users(id) ON DELETE CASCADE  → SQL column: user_id
@@ -122,7 +125,7 @@ All Mongoose queries replaced with Drizzle. Document-to-object helper functions 
 
 #### `src/managers/urlsManager.ts` — rewritten
 
-All Mongoose queries replaced with Drizzle. Atomic visits increment uses `sql\`${urls.visits} + ${amount}\`` template. `getCount` returns a plain `number` (extracted from Drizzle's `count()` result).
+All Mongoose queries replaced with Drizzle. Atomic visits increment uses `sql\`${urls.visits} + ${amount}\``template.`getCount`returns a plain`number`(extracted from Drizzle's`count()` result).
 
 #### Controllers and middleware — updated
 
@@ -160,6 +163,7 @@ Added getting-started guide (install → copy `.env.example` → migrate → run
 ### What was done
 
 #### Dependencies
+
 - Installed: `vitest@4.0.18` (dev)
 
 #### `vitest.config.ts` — created
@@ -197,13 +201,13 @@ Replaced the placeholder `test` script; added `test:watch` and `test:coverage`:
 
 All controller tests mock the manager layer entirely (`vi.mock`) so no database connection is ever attempted.
 
-| Test File | Tests | Coverage |
-|---|---|---|
-| `src/helpers/__tests__/validation.test.ts` | 30 | All 4 Joi schemas — valid/invalid inputs, boundary values, edge cases |
-| `src/middleware/__tests__/verifyJWT.test.ts` | 5 | Missing token, no Bearer value, valid token → `next()` + `req.user` set, invalid token, expired token |
-| `src/controllers/__tests__/authController.test.ts` | 6 | Validation failure, user not found, wrong password, successful login (JWT signed + user info returned), DB error |
-| `src/controllers/__tests__/usersController.test.ts` | 16 | Register (success, duplicate email, validation error, DB errors), getUser (found, not found, DB error), deleteUser (success, DB error), updateUser (partial fields, password hashed, not found, DB error) |
-| `src/controllers/__tests__/urlsController.test.ts` | 27 | getAllUrls, getUrl (ownership check), getUrlCount, getOriginalUrl (visit increment), createUrl (idempotent existing URL, new URL, nanoid called), updateUrl (ownership check), deleteUrl (ownership check, idempotent) |
+| Test File                                           | Tests | Coverage                                                                                                                                                                                                               |
+| --------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/helpers/__tests__/validation.test.ts`          | 30    | All 4 Joi schemas — valid/invalid inputs, boundary values, edge cases                                                                                                                                                  |
+| `src/middleware/__tests__/verifyJWT.test.ts`        | 5     | Missing token, no Bearer value, valid token → `next()` + `req.user` set, invalid token, expired token                                                                                                                  |
+| `src/controllers/__tests__/authController.test.ts`  | 6     | Validation failure, user not found, wrong password, successful login (JWT signed + user info returned), DB error                                                                                                       |
+| `src/controllers/__tests__/usersController.test.ts` | 16    | Register (success, duplicate email, validation error, DB errors), getUser (found, not found, DB error), deleteUser (success, DB error), updateUser (partial fields, password hashed, not found, DB error)              |
+| `src/controllers/__tests__/urlsController.test.ts`  | 27    | getAllUrls, getUrl (ownership check), getUrlCount, getOriginalUrl (visit increment), createUrl (idempotent existing URL, new URL, nanoid called), updateUrl (ownership check), deleteUrl (ownership check, idempotent) |
 
 #### `AGENTS.md` — updated
 
@@ -267,11 +271,11 @@ Added `exclude: ['tests/integration/**', 'node_modules/**']` to prevent `npm tes
 
 #### Integration test files — created (45 tests across 3 files)
 
-| Test File | Tests | Coverage |
-|---|---|---|
-| `tests/integration/auth.test.ts` | 6 | POST /api/auth — valid login, wrong password, non-existent user, missing fields, invalid email format |
-| `tests/integration/users.test.ts` | 16 | POST/GET/PATCH/DELETE /api/users — full user lifecycle, cascade delete, auth enforcement |
-| `tests/integration/urls.test.ts` | 23 | POST/GET/PATCH/DELETE /api/urls — full URL lifecycle, idempotency, visit increment, ownership enforcement |
+| Test File                         | Tests | Coverage                                                                                                  |
+| --------------------------------- | ----- | --------------------------------------------------------------------------------------------------------- |
+| `tests/integration/auth.test.ts`  | 6     | POST /api/auth — valid login, wrong password, non-existent user, missing fields, invalid email format     |
+| `tests/integration/users.test.ts` | 16    | POST/GET/PATCH/DELETE /api/users — full user lifecycle, cascade delete, auth enforcement                  |
+| `tests/integration/urls.test.ts`  | 23    | POST/GET/PATCH/DELETE /api/urls — full URL lifecycle, idempotency, visit increment, ownership enforcement |
 
 ### Verification
 
@@ -294,6 +298,7 @@ AGENTS.md is updated at the end of each phase to reflect new commands, structure
 ### 5.3 Update Dockerfile
 
 The base image is already `node:24`. Remaining tasks:
+
 - Add a health check endpoint (e.g. `GET /health`) to the Express app
 - Add a `HEALTHCHECK` instruction to the Dockerfile if desired
 
@@ -303,27 +308,28 @@ The base image is already `node:24`. Remaining tasks:
 
 ```yaml
 services:
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_DB: picodb
-      POSTGRES_USER: pico
-      POSTGRES_PASSWORD: pico
-    ports:
-      - "5432:5432"
-  app:
-    build: .
-    ports:
-      - "4242:4242"
-    depends_on:
-      - db
-    env_file:
-      - .env
+    db:
+        image: postgres:17
+        environment:
+            POSTGRES_DB: picodb
+            POSTGRES_USER: pico
+            POSTGRES_PASSWORD: pico
+        ports:
+            - '5432:5432'
+    app:
+        build: .
+        ports:
+            - '4242:4242'
+        depends_on:
+            - db
+        env_file:
+            - .env
 ```
 
 ### 5.5 Consider adding ESLint + Prettier
 
 Optional but recommended for DX. Would add:
+
 - `eslint` + `@typescript-eslint/parser` + `@typescript-eslint/eslint-plugin`
 - `prettier` + `eslint-config-prettier`
 - npm scripts: `"lint": "eslint ."`, `"format": "prettier --write ."`
@@ -334,55 +340,55 @@ Optional but recommended for DX. Would add:
 
 ### Completed (Phases 1, 2, 3 & 4)
 
-| File | Status | Notes |
-|---|---|---|
-| `package.json` | Modified | Mongoose/mongo-sanitize removed; drizzle-orm, postgres, drizzle-kit added; `dev` script added; `test`, `test:watch`, `test:coverage` scripts added; `vitest` dev dep added |
-| `app.ts` | Modified | mongo-sanitize removed; `connectToDatabase` changed to named import |
-| `src/db/connect.ts` | Rewritten | postgres.js + Drizzle; named exports `db` and `connectToDatabase` |
-| `src/db/schema.ts` | Created | Drizzle table definitions for `users` and `urls` |
-| `drizzle.config.ts` | Created | Drizzle Kit config |
-| `drizzle/0000_dark_toxin.sql` | Generated | Initial migration SQL |
-| `src/types/user.ts` | Created | `UserSelect`, `UserPublic`, `UserInsert`, `UpdatedUser` |
-| `src/types/url.ts` | Created | `UrlSelect`, `UrlInsert` |
-| `src/types/auth.ts` | Created | `RequestUser` interface |
-| `src/types/picodeclarations.d.ts` | Deleted | Replaced by the three domain type files above |
-| `src/models/user.ts` | Deleted | Replaced by Drizzle schema |
-| `src/models/url.ts` | Deleted | Replaced by Drizzle schema |
-| `src/managers/usersManager.ts` | Rewritten | Drizzle queries; no document-helper functions |
-| `src/managers/urlsManager.ts` | Rewritten | Drizzle queries; `sql` template for atomic visits increment |
-| `src/controllers/authController.ts` | Modified | `password` → `hashedPassword`; `_id` → `id` |
-| `src/controllers/usersController.ts` | Modified | `password` → `hashedPassword`; new type imports |
-| `src/controllers/urlsController.ts` | Modified | `shortUrl`/`originalUrl` → `short`/`original`; `_id` → `id`; new type imports |
-| `src/helpers/validation.ts` | Modified | Removed `picodeclarations` import; inline parameter types |
-| `src/middleware/verifyJWT.ts` | Modified | Import updated to `src/types/auth.js` |
-| `vitest.config.ts` | Created | Vitest config; node environment; `setupFiles` pointing at `src/test-setup.ts` |
-| `src/test-setup.ts` | Created | Loads `.env.test` via dotenv before each test file |
-| `.env.test` | Created | Safe placeholder env vars for unit tests; committed to repo |
-| `src/helpers/__tests__/validation.test.ts` | Created | 30 unit tests covering all 4 Joi schemas |
-| `src/middleware/__tests__/verifyJWT.test.ts` | Created | 5 unit tests for JWT middleware |
-| `src/controllers/__tests__/authController.test.ts` | Created | 6 unit tests for auth controller |
-| `src/controllers/__tests__/usersController.test.ts` | Created | 16 unit tests for users controller |
-| `src/controllers/__tests__/urlsController.test.ts` | Created | 27 unit tests for URLs controller |
-| `AGENTS.md` | Updated | Tests section and build/run commands updated to reflect Vitest setup |
-| `README.md` | Expanded | Getting-started guide, API table, Docker instructions, Testing section added |
-| `.env.example` | Created | Documents all required environment variables |
-| `server.ts` | Created | New entry point (connects DB + listens); replaces root `app.ts` as entry |
-| `src/app.ts` | Created | Exported Express app (no listen); split from old root `app.ts` |
-| `docker-compose.yml` | Created | `db` (dev, port 5432) and `db-test` (integration tests, port 5433) Postgres 17 services |
-| `src/test-utils/db.ts` | Created | `setupTestDb`, `teardownTestDb`, `truncateTables` helpers for integration tests |
-| `vitest.integration.config.ts` | Created | `fileParallelism: false`, 15s/30s timeouts, scoped to `tests/integration/` |
-| `vitest.config.ts` | Updated | Added `exclude: ['tests/integration/**', 'node_modules/**']` |
-| `tests/integration/auth.test.ts` | Created | 6 integration tests — POST /api/auth |
-| `tests/integration/users.test.ts` | Created | 16 integration tests — POST/GET/PATCH/DELETE /api/users |
-| `tests/integration/urls.test.ts` | Created | 23 integration tests — full URL lifecycle |
-| `package.json` | Modified | `main` → `server.js`; `start` → `node dist/server.js`; `dev` → `tsx watch server.ts`; `test:integration` script added; `supertest` + `@types/supertest` dev deps added |
-| `.env.test` | Modified | `DATABASE_URL` updated to point at `db-test` container (port 5433) |
-| `Dockerfile` | Modified | `CMD` updated to `node dist/server.js` |
+| File                                                | Status    | Notes                                                                                                                                                                      |
+| --------------------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`                                      | Modified  | Mongoose/mongo-sanitize removed; drizzle-orm, postgres, drizzle-kit added; `dev` script added; `test`, `test:watch`, `test:coverage` scripts added; `vitest` dev dep added |
+| `app.ts`                                            | Modified  | mongo-sanitize removed; `connectToDatabase` changed to named import                                                                                                        |
+| `src/db/connect.ts`                                 | Rewritten | postgres.js + Drizzle; named exports `db` and `connectToDatabase`                                                                                                          |
+| `src/db/schema.ts`                                  | Created   | Drizzle table definitions for `users` and `urls`                                                                                                                           |
+| `drizzle.config.ts`                                 | Created   | Drizzle Kit config                                                                                                                                                         |
+| `drizzle/0000_dark_toxin.sql`                       | Generated | Initial migration SQL                                                                                                                                                      |
+| `src/types/user.ts`                                 | Created   | `UserSelect`, `UserPublic`, `UserInsert`, `UpdatedUser`                                                                                                                    |
+| `src/types/url.ts`                                  | Created   | `UrlSelect`, `UrlInsert`                                                                                                                                                   |
+| `src/types/auth.ts`                                 | Created   | `RequestUser` interface                                                                                                                                                    |
+| `src/types/picodeclarations.d.ts`                   | Deleted   | Replaced by the three domain type files above                                                                                                                              |
+| `src/models/user.ts`                                | Deleted   | Replaced by Drizzle schema                                                                                                                                                 |
+| `src/models/url.ts`                                 | Deleted   | Replaced by Drizzle schema                                                                                                                                                 |
+| `src/managers/usersManager.ts`                      | Rewritten | Drizzle queries; no document-helper functions                                                                                                                              |
+| `src/managers/urlsManager.ts`                       | Rewritten | Drizzle queries; `sql` template for atomic visits increment                                                                                                                |
+| `src/controllers/authController.ts`                 | Modified  | `password` → `hashedPassword`; `_id` → `id`                                                                                                                                |
+| `src/controllers/usersController.ts`                | Modified  | `password` → `hashedPassword`; new type imports                                                                                                                            |
+| `src/controllers/urlsController.ts`                 | Modified  | `shortUrl`/`originalUrl` → `short`/`original`; `_id` → `id`; new type imports                                                                                              |
+| `src/helpers/validation.ts`                         | Modified  | Removed `picodeclarations` import; inline parameter types                                                                                                                  |
+| `src/middleware/verifyJWT.ts`                       | Modified  | Import updated to `src/types/auth.js`                                                                                                                                      |
+| `vitest.config.ts`                                  | Created   | Vitest config; node environment; `setupFiles` pointing at `src/test-setup.ts`                                                                                              |
+| `src/test-setup.ts`                                 | Created   | Loads `.env.test` via dotenv before each test file                                                                                                                         |
+| `.env.test`                                         | Created   | Safe placeholder env vars for unit tests; committed to repo                                                                                                                |
+| `src/helpers/__tests__/validation.test.ts`          | Created   | 30 unit tests covering all 4 Joi schemas                                                                                                                                   |
+| `src/middleware/__tests__/verifyJWT.test.ts`        | Created   | 5 unit tests for JWT middleware                                                                                                                                            |
+| `src/controllers/__tests__/authController.test.ts`  | Created   | 6 unit tests for auth controller                                                                                                                                           |
+| `src/controllers/__tests__/usersController.test.ts` | Created   | 16 unit tests for users controller                                                                                                                                         |
+| `src/controllers/__tests__/urlsController.test.ts`  | Created   | 27 unit tests for URLs controller                                                                                                                                          |
+| `AGENTS.md`                                         | Updated   | Tests section and build/run commands updated to reflect Vitest setup                                                                                                       |
+| `README.md`                                         | Expanded  | Getting-started guide, API table, Docker instructions, Testing section added                                                                                               |
+| `.env.example`                                      | Created   | Documents all required environment variables                                                                                                                               |
+| `server.ts`                                         | Created   | New entry point (connects DB + listens); replaces root `app.ts` as entry                                                                                                   |
+| `src/app.ts`                                        | Created   | Exported Express app (no listen); split from old root `app.ts`                                                                                                             |
+| `docker-compose.yml`                                | Created   | `db` (dev, port 5432) and `db-test` (integration tests, port 5433) Postgres 17 services                                                                                    |
+| `src/test-utils/db.ts`                              | Created   | `setupTestDb`, `teardownTestDb`, `truncateTables` helpers for integration tests                                                                                            |
+| `vitest.integration.config.ts`                      | Created   | `fileParallelism: false`, 15s/30s timeouts, scoped to `tests/integration/`                                                                                                 |
+| `vitest.config.ts`                                  | Updated   | Added `exclude: ['tests/integration/**', 'node_modules/**']`                                                                                                               |
+| `tests/integration/auth.test.ts`                    | Created   | 6 integration tests — POST /api/auth                                                                                                                                       |
+| `tests/integration/users.test.ts`                   | Created   | 16 integration tests — POST/GET/PATCH/DELETE /api/users                                                                                                                    |
+| `tests/integration/urls.test.ts`                    | Created   | 23 integration tests — full URL lifecycle                                                                                                                                  |
+| `package.json`                                      | Modified  | `main` → `server.js`; `start` → `node dist/server.js`; `dev` → `tsx watch server.ts`; `test:integration` script added; `supertest` + `@types/supertest` dev deps added     |
+| `.env.test`                                         | Modified  | `DATABASE_URL` updated to point at `db-test` container (port 5433)                                                                                                         |
+| `Dockerfile`                                        | Modified  | `CMD` updated to `node dist/server.js`                                                                                                                                     |
 
 ### Pending (Phase 5)
 
-| File | Action | Phase |
-|---|---|---|
-| `tsconfig.json` | Modify — bump `target` to `es2022`; switch `module`/`moduleResolution` to `NodeNext` | 5 |
-| `docker-compose.yml` | Modify — add `app` service for local dev (extends Phase 4 file) | 5 |
-| `Dockerfile` | Modify — add health check | 5 |
+| File                 | Action                                                                               | Phase |
+| -------------------- | ------------------------------------------------------------------------------------ | ----- |
+| `tsconfig.json`      | Modify — bump `target` to `es2022`; switch `module`/`moduleResolution` to `NodeNext` | 5     |
+| `docker-compose.yml` | Modify — add `app` service for local dev (extends Phase 4 file)                      | 5     |
+| `Dockerfile`         | Modify — add health check                                                            | 5     |

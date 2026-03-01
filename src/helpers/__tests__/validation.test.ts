@@ -1,45 +1,68 @@
 import { describe, it, expect } from 'vitest';
-import {
-    validateUser,
-    validateUpdateBody,
-    validateAuthBody,
-    validateUrl,
-} from '../validation.js';
+import { validateUser, validateUpdateBody, validateAuthBody, validateUrl } from '../validation.js';
 
 describe('validateUser', () => {
     it('accepts a valid user object', () => {
-        const { error } = validateUser({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        const { error } = validateUser({
+            name: 'Alice',
+            email: 'alice@example.com',
+            password: 'secret',
+        });
         expect(error).toBeUndefined();
     });
 
     it('rejects when name is missing', () => {
-        const { error } = validateUser({ name: '', email: 'alice@example.com', password: 'secret' });
+        const { error } = validateUser({
+            name: '',
+            email: 'alice@example.com',
+            password: 'secret',
+        });
         expect(error).toBeDefined();
     });
 
     it('rejects when name is too short (< 5 chars)', () => {
-        const { error } = validateUser({ name: 'Ali', email: 'alice@example.com', password: 'secret' });
+        const { error } = validateUser({
+            name: 'Ali',
+            email: 'alice@example.com',
+            password: 'secret',
+        });
         expect(error).toBeDefined();
         expect(error!.details[0].message).toMatch(/name/);
     });
 
     it('rejects when name exceeds 50 chars', () => {
-        const { error } = validateUser({ name: 'A'.repeat(51), email: 'alice@example.com', password: 'secret' });
+        const { error } = validateUser({
+            name: 'A'.repeat(51),
+            email: 'alice@example.com',
+            password: 'secret',
+        });
         expect(error).toBeDefined();
     });
 
     it('accepts name at exactly 5 chars', () => {
-        const { error } = validateUser({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
+        const { error } = validateUser({
+            name: 'Alice',
+            email: 'alice@example.com',
+            password: 'secret',
+        });
         expect(error).toBeUndefined();
     });
 
     it('accepts name at exactly 50 chars', () => {
-        const { error } = validateUser({ name: 'A'.repeat(50), email: 'alice@example.com', password: 'secret' });
+        const { error } = validateUser({
+            name: 'A'.repeat(50),
+            email: 'alice@example.com',
+            password: 'secret',
+        });
         expect(error).toBeUndefined();
     });
 
     it('rejects an invalid email format', () => {
-        const { error } = validateUser({ name: 'Alice', email: 'not-an-email', password: 'secret' });
+        const { error } = validateUser({
+            name: 'Alice',
+            email: 'not-an-email',
+            password: 'secret',
+        });
         expect(error).toBeDefined();
         expect(error!.details[0].message).toMatch(/email/);
     });
@@ -50,23 +73,41 @@ describe('validateUser', () => {
     });
 
     it('rejects when password is too short (< 5 chars)', () => {
-        const { error } = validateUser({ name: 'Alice', email: 'alice@example.com', password: 'abc' });
+        const { error } = validateUser({
+            name: 'Alice',
+            email: 'alice@example.com',
+            password: 'abc',
+        });
         expect(error).toBeDefined();
         expect(error!.details[0].message).toMatch(/password/);
     });
 
     it('rejects when password exceeds 1024 chars', () => {
-        const { error } = validateUser({ name: 'Alice', email: 'alice@example.com', password: 'a'.repeat(1025) });
+        const { error } = validateUser({
+            name: 'Alice',
+            email: 'alice@example.com',
+            password: 'a'.repeat(1025),
+        });
         expect(error).toBeDefined();
     });
 
     it('accepts password at exactly 5 chars', () => {
-        const { error } = validateUser({ name: 'Alice', email: 'alice@example.com', password: 'abcde' });
+        const { error } = validateUser({
+            name: 'Alice',
+            email: 'alice@example.com',
+            password: 'abcde',
+        });
         expect(error).toBeUndefined();
     });
 
     it('rejects unknown extra fields', () => {
-        const { error } = validateUser({ name: 'Alice', email: 'alice@example.com', password: 'secret', extra: 'bad' } as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = validateUser({
+            name: 'Alice',
+            email: 'alice@example.com',
+            password: 'secret',
+            extra: 'bad',
+        } as any);
         expect(error).toBeDefined();
     });
 });
@@ -88,7 +129,11 @@ describe('validateUpdateBody', () => {
     });
 
     it('accepts an object with all three fields', () => {
-        const { error } = validateUpdateBody({ name: 'Alice', email: 'alice@example.com', password: 'newpass' });
+        const { error } = validateUpdateBody({
+            name: 'Alice',
+            email: 'alice@example.com',
+            password: 'newpass',
+        });
         expect(error).toBeUndefined();
     });
 
@@ -162,6 +207,7 @@ describe('validateUrl', () => {
     });
 
     it('rejects a missing url field', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = validateUrl({} as any);
         expect(error).toBeDefined();
     });

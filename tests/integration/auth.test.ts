@@ -5,11 +5,19 @@ import app from '../../src/app.js';
 import usersManager from '../../src/managers/usersManager.js';
 import { setupTestDb, teardownTestDb, truncateTables } from '../../src/test-utils/db.js';
 
-beforeAll(async () => { await setupTestDb(); });
-afterAll(async () => { await teardownTestDb(); });
-afterEach(async () => { await truncateTables(); });
+beforeAll(async () => {
+    await setupTestDb();
+});
+afterAll(async () => {
+    await teardownTestDb();
+});
+afterEach(async () => {
+    await truncateTables();
+});
 
-async function createTestUser(overrides: { name?: string; email?: string; password?: string } = {}) {
+async function createTestUser(
+    overrides: { name?: string; email?: string; password?: string } = {},
+) {
     const password = overrides.password ?? 'password123';
     const hashedPassword = await bcrypt.hash(password, 10);
     return usersManager.createUser({
@@ -56,17 +64,13 @@ describe('POST /api/auth', () => {
     });
 
     it('returns 400 when email is missing', async () => {
-        const res = await request(app)
-            .post('/api/auth')
-            .send({ password: 'secret123' });
+        const res = await request(app).post('/api/auth').send({ password: 'secret123' });
 
         expect(res.status).toBe(400);
     });
 
     it('returns 400 when password is missing', async () => {
-        const res = await request(app)
-            .post('/api/auth')
-            .send({ email: 'auth@example.com' });
+        const res = await request(app).post('/api/auth').send({ email: 'auth@example.com' });
 
         expect(res.status).toBe(400);
     });

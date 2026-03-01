@@ -22,7 +22,9 @@ const mockUrl = {
 };
 
 // Creates a request with the authenticated user already attached (simulating verifyJWT).
-function makeReq(opts: { body?: object; params?: Record<string, string>; userId?: string } = {}): Request {
+function makeReq(
+    opts: { body?: object; params?: Record<string, string>; userId?: string } = {},
+): Request {
     return {
         body: opts.body ?? {},
         params: opts.params ?? {},
@@ -185,7 +187,10 @@ describe('urlsController.getOriginalUrl', () => {
     });
 
     it('returns 200 with original URL and increments visits', async () => {
-        vi.mocked(urlsManager.getByShortUrlAndIncreaseVisits).mockResolvedValue({ ...mockUrl, visits: 1 });
+        vi.mocked(urlsManager.getByShortUrlAndIncreaseVisits).mockResolvedValue({
+            ...mockUrl,
+            visits: 1,
+        });
 
         const req = makeReq({ params: { shorturl: SHORT } });
         const { res, status, json } = makeRes();
@@ -210,7 +215,9 @@ describe('urlsController.getOriginalUrl', () => {
     });
 
     it('returns 500 when the database throws', async () => {
-        vi.mocked(urlsManager.getByShortUrlAndIncreaseVisits).mockRejectedValue(new Error('DB error'));
+        vi.mocked(urlsManager.getByShortUrlAndIncreaseVisits).mockRejectedValue(
+            new Error('DB error'),
+        );
 
         const req = makeReq({ params: { shorturl: SHORT } });
         const { res, status, send } = makeRes();
@@ -251,7 +258,7 @@ describe('urlsController.createUrl', () => {
 
     it('returns 201 with new short URL when original does not exist', async () => {
         vi.mocked(urlsManager.getByOriginalUrl).mockResolvedValue(undefined);
-        vi.mocked(nanoid).mockReturnValue(SHORT as any);
+        vi.mocked(nanoid).mockReturnValue(SHORT as unknown as never);
         vi.mocked(urlsManager.createUrl).mockResolvedValue(mockUrl);
 
         const req = makeReq({ body: { url: mockUrl.original }, userId: OWNER_ID });
@@ -282,7 +289,7 @@ describe('urlsController.createUrl', () => {
 
     it('returns 500 when createUrl DB call throws', async () => {
         vi.mocked(urlsManager.getByOriginalUrl).mockResolvedValue(undefined);
-        vi.mocked(nanoid).mockReturnValue(SHORT as any);
+        vi.mocked(nanoid).mockReturnValue(SHORT as unknown as never);
         vi.mocked(urlsManager.createUrl).mockRejectedValue(new Error('DB error'));
 
         const req = makeReq({ body: { url: 'https://example.com' } });
@@ -312,7 +319,10 @@ describe('urlsController.updateUrl', () => {
     it('returns 404 when the URL is not found', async () => {
         vi.mocked(urlsManager.getByShortUrl).mockResolvedValue(undefined);
 
-        const req = makeReq({ params: { shorturl: SHORT }, body: { url: 'https://new.example.com' } });
+        const req = makeReq({
+            params: { shorturl: SHORT },
+            body: { url: 'https://new.example.com' },
+        });
         const { res, status, send } = makeRes();
 
         await urlsController.updateUrl(req, res);
@@ -324,7 +334,11 @@ describe('urlsController.updateUrl', () => {
     it('returns 401 when the URL belongs to a different user', async () => {
         vi.mocked(urlsManager.getByShortUrl).mockResolvedValue({ ...mockUrl, userId: OTHER_ID });
 
-        const req = makeReq({ params: { shorturl: SHORT }, body: { url: 'https://new.example.com' }, userId: OWNER_ID });
+        const req = makeReq({
+            params: { shorturl: SHORT },
+            body: { url: 'https://new.example.com' },
+            userId: OWNER_ID,
+        });
         const { res, status, send } = makeRes();
 
         await urlsController.updateUrl(req, res);
@@ -338,7 +352,11 @@ describe('urlsController.updateUrl', () => {
         vi.mocked(urlsManager.getByShortUrl).mockResolvedValue(mockUrl);
         vi.mocked(urlsManager.updateUrl).mockResolvedValue(updatedUrl);
 
-        const req = makeReq({ params: { shorturl: SHORT }, body: { url: 'https://new.example.com' }, userId: OWNER_ID });
+        const req = makeReq({
+            params: { shorturl: SHORT },
+            body: { url: 'https://new.example.com' },
+            userId: OWNER_ID,
+        });
         const { res, status, json } = makeRes();
 
         await urlsController.updateUrl(req, res);
@@ -351,7 +369,10 @@ describe('urlsController.updateUrl', () => {
     it('returns 500 when the database throws', async () => {
         vi.mocked(urlsManager.getByShortUrl).mockRejectedValue(new Error('DB error'));
 
-        const req = makeReq({ params: { shorturl: SHORT }, body: { url: 'https://new.example.com' } });
+        const req = makeReq({
+            params: { shorturl: SHORT },
+            body: { url: 'https://new.example.com' },
+        });
         const { res, status, send } = makeRes();
 
         await urlsController.updateUrl(req, res);

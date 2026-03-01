@@ -68,7 +68,7 @@ describe('usersController.registerUser', () => {
 
     it('returns 201 with new user on successful registration', async () => {
         vi.mocked(usersManager.getByEmail).mockResolvedValue(undefined);
-        vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as any);
+        vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as unknown as never);
         vi.mocked(usersManager.createUser).mockResolvedValue(mockUserPublic);
 
         const req = makeReq({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
@@ -100,7 +100,7 @@ describe('usersController.registerUser', () => {
 
     it('returns 500 when createUser throws', async () => {
         vi.mocked(usersManager.getByEmail).mockResolvedValue(undefined);
-        vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as any);
+        vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as unknown as never);
         vi.mocked(usersManager.createUser).mockRejectedValue(new Error('DB error'));
 
         const req = makeReq({ name: 'Alice', email: 'alice@example.com', password: 'secret' });
@@ -202,33 +202,43 @@ describe('usersController.updateUser', () => {
     });
 
     it('updates only the name when only name is provided', async () => {
-        vi.mocked(usersManager.updateUser).mockResolvedValue({ ...mockUserPublic, name: 'Alice Updated' });
+        vi.mocked(usersManager.updateUser).mockResolvedValue({
+            ...mockUserPublic,
+            name: 'Alice Updated',
+        });
 
         const req = makeReq({ name: 'Alice Updated' }, 'user-uuid-123');
         const { res, status, json } = makeRes();
 
         await usersController.updateUser(req, res);
 
-        expect(usersManager.updateUser).toHaveBeenCalledWith('user-uuid-123', { name: 'Alice Updated' });
+        expect(usersManager.updateUser).toHaveBeenCalledWith('user-uuid-123', {
+            name: 'Alice Updated',
+        });
         expect(status).toHaveBeenCalledWith(200);
         expect(json).toHaveBeenCalledWith({ ...mockUserPublic, name: 'Alice Updated' });
     });
 
     it('updates only the email when only email is provided', async () => {
-        vi.mocked(usersManager.updateUser).mockResolvedValue({ ...mockUserPublic, email: 'new@example.com' });
+        vi.mocked(usersManager.updateUser).mockResolvedValue({
+            ...mockUserPublic,
+            email: 'new@example.com',
+        });
 
         const req = makeReq({ email: 'new@example.com' }, 'user-uuid-123');
         const { res, status, json } = makeRes();
 
         await usersController.updateUser(req, res);
 
-        expect(usersManager.updateUser).toHaveBeenCalledWith('user-uuid-123', { email: 'new@example.com' });
+        expect(usersManager.updateUser).toHaveBeenCalledWith('user-uuid-123', {
+            email: 'new@example.com',
+        });
         expect(status).toHaveBeenCalledWith(200);
         expect(json).toHaveBeenCalledWith({ ...mockUserPublic, email: 'new@example.com' });
     });
 
     it('hashes the new password when password is provided', async () => {
-        vi.mocked(bcrypt.hash).mockResolvedValue('new-hashed-password' as any);
+        vi.mocked(bcrypt.hash).mockResolvedValue('new-hashed-password' as unknown as never);
         vi.mocked(usersManager.updateUser).mockResolvedValue(mockUserPublic);
 
         const req = makeReq({ password: 'newpassword' }, 'user-uuid-123');
@@ -237,7 +247,9 @@ describe('usersController.updateUser', () => {
         await usersController.updateUser(req, res);
 
         expect(bcrypt.hash).toHaveBeenCalledWith('newpassword', 10);
-        expect(usersManager.updateUser).toHaveBeenCalledWith('user-uuid-123', { hashedPassword: 'new-hashed-password' });
+        expect(usersManager.updateUser).toHaveBeenCalledWith('user-uuid-123', {
+            hashedPassword: 'new-hashed-password',
+        });
         expect(status).toHaveBeenCalledWith(200);
     });
 

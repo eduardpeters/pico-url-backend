@@ -10,7 +10,9 @@ export const users = pgTable('users', {
 
 export const urls = pgTable('urls', {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+        .notNull()
+        .references(() => users.id, { onDelete: 'cascade' }),
     original: text('original').notNull().unique(),
     short: varchar('short', { length: 10 }).notNull().unique(),
     visits: integer('visits').notNull().default(0),

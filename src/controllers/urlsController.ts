@@ -9,7 +9,7 @@ const SHORTIDLENGTH = 10;
 async function getAllUrls(req: Request, res: Response) {
     try {
         const urlEntries = await urlsManager.getAllByUser((req as Request & RequestUser).user._id);
-        const result = urlEntries.map(entry => ({ ...entry, short: appendBaseUrl(entry.short) }));
+        const result = urlEntries.map((entry) => ({ ...entry, short: appendBaseUrl(entry.short) }));
         return res.status(200).json(result);
     } catch (error) {
         console.error(error);
@@ -76,7 +76,7 @@ async function createUrl(req: Request, res: Response) {
         if (urlEntry) {
             return res.status(200).json({ shortUrl: appendBaseUrl(urlEntry.short) });
         }
-    } catch (error) {
+    } catch (_error) {
         return res.status(500).send('Database error');
     }
     const newUrl = {

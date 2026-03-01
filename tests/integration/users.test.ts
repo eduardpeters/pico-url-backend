@@ -3,14 +3,21 @@ import request from 'supertest';
 import bcrypt from 'bcrypt';
 import app from '../../src/app.js';
 import usersManager from '../../src/managers/usersManager.js';
-import urlsManager from '../../src/managers/urlsManager.js';
 import { setupTestDb, teardownTestDb, truncateTables } from '../../src/test-utils/db.js';
 
-beforeAll(async () => { await setupTestDb(); });
-afterAll(async () => { await teardownTestDb(); });
-afterEach(async () => { await truncateTables(); });
+beforeAll(async () => {
+    await setupTestDb();
+});
+afterAll(async () => {
+    await teardownTestDb();
+});
+afterEach(async () => {
+    await truncateTables();
+});
 
-async function createTestUser(overrides: { name?: string; email?: string; password?: string } = {}) {
+async function createTestUser(
+    overrides: { name?: string; email?: string; password?: string } = {},
+) {
     const password = overrides.password ?? 'password123';
     const hashedPassword = await bcrypt.hash(password, 10);
     return usersManager.createUser({
@@ -21,9 +28,7 @@ async function createTestUser(overrides: { name?: string; email?: string; passwo
 }
 
 async function loginTestUser(email: string, password: string): Promise<string> {
-    const res = await request(app)
-        .post('/api/auth')
-        .send({ email, password });
+    const res = await request(app).post('/api/auth').send({ email, password });
     return res.body.token as string;
 }
 
@@ -68,9 +73,7 @@ describe('POST /api/users — register', () => {
     });
 
     it('returns 400 when required fields are missing', async () => {
-        const res = await request(app)
-            .post('/api/users')
-            .send({ name: 'Alice' });
+        const res = await request(app).post('/api/users').send({ name: 'Alice' });
 
         expect(res.status).toBe(400);
     });
@@ -81,9 +84,7 @@ describe('GET /api/users — get authenticated user', () => {
         await createTestUser({ email: 'get@example.com', password: 'password123' });
         const token = await loginTestUser('get@example.com', 'password123');
 
-        const res = await request(app)
-            .get('/api/users')
-            .set('Authorization', `Bearer ${token}`);
+        const res = await request(app).get('/api/users').set('Authorization', `Bearer ${token}`);
 
         expect(res.status).toBe(200);
         expect(res.body.email).toBe('get@example.com');
@@ -169,9 +170,7 @@ describe('PATCH /api/users — update user', () => {
     });
 
     it('returns 401 with no token', async () => {
-        const res = await request(app)
-            .patch('/api/users')
-            .send({ name: 'Updated' });
+        const res = await request(app).patch('/api/users').send({ name: 'Updated' });
 
         expect(res.status).toBe(401);
     });
@@ -208,9 +207,7 @@ describe('DELETE /api/users — delete user', () => {
         const short = shortUrl.split('/').pop() as string;
 
         // Delete the user
-        await request(app)
-            .delete('/api/users')
-            .set('Authorization', `Bearer ${token}`);
+        await request(app).delete('/api/users').set('Authorization', `Bearer ${token}`);
 
         // The URL should no longer be findable
         const getRes = await request(app).get(`/api/urls/${short}`);

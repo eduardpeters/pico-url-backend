@@ -33,16 +33,12 @@ class usersManager {
     }
 
     static async updateUser(id: string, updatedUser: UpdatedUser): Promise<UserPublic | undefined> {
-        const results = await db
-            .update(users)
-            .set(updatedUser)
-            .where(eq(users.id, id))
-            .returning({
-                id: users.id,
-                name: users.name,
-                email: users.email,
-                created: users.created,
-            });
+        const results = await db.update(users).set(updatedUser).where(eq(users.id, id)).returning({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            created: users.created,
+        });
         return results[0];
     }
 

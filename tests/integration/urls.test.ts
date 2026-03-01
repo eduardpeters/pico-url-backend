@@ -5,9 +5,15 @@ import app from '../../src/app.js';
 import usersManager from '../../src/managers/usersManager.js';
 import { setupTestDb, teardownTestDb, truncateTables } from '../../src/test-utils/db.js';
 
-beforeAll(async () => { await setupTestDb(); });
-afterAll(async () => { await teardownTestDb(); });
-afterEach(async () => { await truncateTables(); });
+beforeAll(async () => {
+    await setupTestDb();
+});
+afterAll(async () => {
+    await teardownTestDb();
+});
+afterEach(async () => {
+    await truncateTables();
+});
 
 async function createTestUser(email = 'test@example.com', password = 'password123') {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -65,9 +71,7 @@ describe('POST /api/urls — create shortened URL', () => {
     });
 
     it('returns 401 with no token', async () => {
-        const res = await request(app)
-            .post('/api/urls')
-            .send({ url: 'https://example.com' });
+        const res = await request(app).post('/api/urls').send({ url: 'https://example.com' });
 
         expect(res.status).toBe(401);
     });
@@ -87,9 +91,7 @@ describe('GET /api/urls — list all URLs for user', () => {
             .set('Authorization', `Bearer ${token}`)
             .send({ url: 'https://example.com/second' });
 
-        const res = await request(app)
-            .get('/api/urls')
-            .set('Authorization', `Bearer ${token}`);
+        const res = await request(app).get('/api/urls').set('Authorization', `Bearer ${token}`);
 
         expect(res.status).toBe(200);
         expect(Array.isArray(res.body)).toBe(true);
@@ -103,9 +105,7 @@ describe('GET /api/urls — list all URLs for user', () => {
         await createTestUser();
         const token = await loginTestUser('test@example.com', 'password123');
 
-        const res = await request(app)
-            .get('/api/urls')
-            .set('Authorization', `Bearer ${token}`);
+        const res = await request(app).get('/api/urls').set('Authorization', `Bearer ${token}`);
 
         expect(res.status).toBe(200);
         expect(res.body).toEqual([]);
@@ -202,7 +202,7 @@ describe('GET /api/urls/info/:shorturl — get URL details (authenticated)', () 
         expect(res.body.visits).toBe(0);
     });
 
-    it('returns 401 when requesting another user\'s URL', async () => {
+    it("returns 401 when requesting another user's URL", async () => {
         // User A creates a URL
         await createTestUser('usera@example.com');
         const tokenA = await loginTestUser('usera@example.com', 'password123');
@@ -254,7 +254,7 @@ describe('PATCH /api/urls/:shorturl — update original URL', () => {
         expect(res.body.original).toBe('https://example.com/after-update');
     });
 
-    it('returns 401 when trying to update another user\'s URL', async () => {
+    it("returns 401 when trying to update another user's URL", async () => {
         await createTestUser('owner@example.com');
         const ownerToken = await loginTestUser('owner@example.com', 'password123');
         const createRes = await request(app)
@@ -335,7 +335,7 @@ describe('DELETE /api/urls/:shorturl — delete URL', () => {
         expect(res.status).toBe(204);
     });
 
-    it('returns 401 when trying to delete another user\'s URL', async () => {
+    it("returns 401 when trying to delete another user's URL", async () => {
         await createTestUser('owner@example.com');
         const ownerToken = await loginTestUser('owner@example.com', 'password123');
         const createRes = await request(app)
