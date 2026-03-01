@@ -4,7 +4,7 @@
     "description": "An URL shortener API",
     "main": "server.js",
     "scripts": {
-        "build": "npx tsc",
+        "build": "tsc",
         "start": "node dist/server.js",
         "dev": "tsx watch server.ts",
         "test": "vitest run",
