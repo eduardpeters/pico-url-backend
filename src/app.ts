@@ -12,6 +12,10 @@ app.use(express.json());
 app.use('/api/users', usersRoute);
 app.use('/api/auth', authRoute);
 app.use('/api/urls', urlsRoute);
+app.get('/health', (req: Request, res: Response) => {
+    res.send('OK');
+});
+
 app.get('/', (req: Request, res: Response) => {
     res.send('Express + TypeScript Server');
 });

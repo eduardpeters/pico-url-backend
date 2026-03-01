@@ -13,7 +13,7 @@ async function registerUser(req: Request, res: Response) {
     let user;
     try {
         user = await usersManager.getByEmail(req.body.email);
-    } catch (error) {
+    } catch (_error) {
         return res.status(500).send('Database error occurred');
     }
     if (user) {
@@ -73,7 +73,10 @@ async function updateUser(req: Request, res: Response) {
         updatedUser.hashedPassword = await bcrypt.hash(req.body.password, 10);
     }
     try {
-        const user = await usersManager.updateUser((req as Request & RequestUser).user._id, updatedUser);
+        const user = await usersManager.updateUser(
+            (req as Request & RequestUser).user._id,
+            updatedUser,
+        );
         if (!user) {
             return res.status(404).send('User not found');
         }

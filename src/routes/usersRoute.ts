@@ -8,5 +8,4 @@ router.get('/', verifyJWT, usersController.getUser);
 router.delete('/', verifyJWT, usersController.deleteUser);
 router.patch('/', verifyJWT, usersController.updateUser);
 
-
 export default router;

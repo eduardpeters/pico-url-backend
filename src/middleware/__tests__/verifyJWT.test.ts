@@ -17,7 +17,11 @@ function makeReq(authHeader?: string): Request {
     } as unknown as Request;
 }
 
-function makeRes(): { res: Response; status: ReturnType<typeof vi.fn>; send: ReturnType<typeof vi.fn> } {
+function makeRes(): {
+    res: Response;
+    status: ReturnType<typeof vi.fn>;
+    send: ReturnType<typeof vi.fn>;
+} {
     const send = vi.fn().mockReturnThis();
     const status = vi.fn().mockReturnValue({ send });
     const res = { status } as unknown as Response;
@@ -31,14 +35,18 @@ beforeEach(() => {
 describe('verifyJWT', () => {
     it('calls next() and attaches user to req when token is valid', () => {
         const decoded = { _id: 'user-uuid-123' };
-        vi.mocked(jwt.verify).mockReturnValue(decoded as any);
+        vi.mocked(jwt.verify).mockReturnValue(decoded as unknown as never);
 
         const req = makeReq('Bearer valid.token.here');
         const { res } = makeRes();
 
         verifyJWT(req, res, mockNext);
 
-        expect(jwt.verify).toHaveBeenCalledWith('valid.token.here', 'test-jwt-secret-for-unit-tests-only');
+        expect(jwt.verify).toHaveBeenCalledWith(
+            'valid.token.here',
+            'test-jwt-secret-for-unit-tests-only',
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect((req as any).user).toEqual(decoded);
         expect(mockNext).toHaveBeenCalledOnce();
     });
@@ -84,7 +92,9 @@ describe('verifyJWT', () => {
     it('returns 401 when jwt.verify throws TokenExpiredError', () => {
         const expiredError = new Error('jwt expired');
         expiredError.name = 'TokenExpiredError';
-        vi.mocked(jwt.verify).mockImplementation(() => { throw expiredError; });
+        vi.mocked(jwt.verify).mockImplementation(() => {
+            throw expiredError;
+        });
 
         const req = makeReq('Bearer expired.token.here');
         const { res, status, send } = makeRes();

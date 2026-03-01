@@ -1,7 +1,7 @@
 import { eq, count, sql } from 'drizzle-orm';
 import { db } from '../db/connect.js';
 import { urls } from '../db/schema.js';
-import type { UrlSelect, UrlInsert } from '../types/url.js';
+import type { UrlSelect } from '../types/url.js';
 
 interface NewUrlInput {
     userId: string;
@@ -24,7 +24,10 @@ class urlsManager {
         return results[0];
     }
 
-    static async getByShortUrlAndIncreaseVisits(short: string, amount = 1): Promise<UrlSelect | undefined> {
+    static async getByShortUrlAndIncreaseVisits(
+        short: string,
+        amount = 1,
+    ): Promise<UrlSelect | undefined> {
         const results = await db
             .update(urls)
             .set({ visits: sql`${urls.visits} + ${amount}` })
@@ -34,7 +37,10 @@ class urlsManager {
     }
 
     static async getCount(userId: string): Promise<number> {
-        const results = await db.select({ count: count() }).from(urls).where(eq(urls.userId, userId));
+        const results = await db
+            .select({ count: count() })
+            .from(urls)
+            .where(eq(urls.userId, userId));
         return results[0].count;
     }
 

@@ -69,7 +69,7 @@ describe('authController.authorizeUser', () => {
 
     it('returns 400 when password does not match', async () => {
         vi.mocked(usersManager.getByEmail).mockResolvedValue(mockUserFull);
-        vi.mocked(bcrypt.compare).mockResolvedValue(false as any);
+        vi.mocked(bcrypt.compare).mockResolvedValue(false as unknown as never);
 
         const req = makeReq({ email: 'alice@example.com', password: 'wrongpassword' });
         const { res, status, send } = makeRes();
@@ -82,8 +82,8 @@ describe('authController.authorizeUser', () => {
 
     it('returns 200 with token and user info on successful login', async () => {
         vi.mocked(usersManager.getByEmail).mockResolvedValue(mockUserFull);
-        vi.mocked(bcrypt.compare).mockResolvedValue(true as any);
-        vi.mocked(jwt.sign).mockReturnValue('signed.jwt.token' as any);
+        vi.mocked(bcrypt.compare).mockResolvedValue(true as unknown as never);
+        vi.mocked(jwt.sign).mockReturnValue('signed.jwt.token' as unknown as never);
 
         const req = makeReq({ email: 'alice@example.com', password: 'secret' });
         const { res, status, json } = makeRes();

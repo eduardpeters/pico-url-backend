@@ -9,7 +9,7 @@ function verifyJWT(req: Request, res: Response, next: NextFunction) {
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-        (req as Request & RequestUser).user = (decoded as { _id: string });
+        (req as Request & RequestUser).user = decoded as { _id: string };
         next();
     } catch (error) {
         console.log(error);

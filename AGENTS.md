@@ -90,6 +90,7 @@ docker compose down
 ```
 
 Key implementation notes:
+
 - `src/test-utils/db.ts` provides `setupTestDb()` (runs Drizzle migrations), `teardownTestDb()` (closes connection), and `truncateTables()` (`TRUNCATE users CASCADE`) helpers used in `beforeAll`/`afterAll`/`afterEach` hooks.
 - `vitest.integration.config.ts` uses `fileParallelism: false` (sequential file execution) to prevent concurrent migration race conditions.
 - `tests/integration/**` is excluded from the default `vitest.config.ts` so `npm test` never requires a database.
@@ -97,8 +98,21 @@ Key implementation notes:
 
 ## Linting / Formatting
 
-**No linting or formatting tools are configured** (no ESLint, Prettier, or EditorConfig).
-Follow the existing code style conventions described below.
+ESLint 10 (TypeScript-ESLint) and Prettier are configured.
+
+```bash
+# Lint all source files
+npm run lint       # runs: eslint .
+
+# Format all files (writes in place)
+npm run format     # runs: prettier --write .
+```
+
+Config files: `eslint.config.js` (flat config, ESLint 9+ format), `.prettierrc`.
+
+ESLint rule notes:
+- `@typescript-eslint/no-unused-vars` is configured to allow `_`-prefixed catch variables (e.g. `catch (_error) {}`).
+- Use `// eslint-disable-next-line @typescript-eslint/no-explicit-any` in test files when mocking overloaded functions requires `as any`.
 
 ## Project Structure
 
@@ -155,15 +169,15 @@ Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Schema**.
 
 - **Strict mode** is enabled in tsconfig.json.
 - **ESM imports** throughout. Local imports MUST use `.js` extension:
-  ```ts
-  import urlsManager from '../managers/urlsManager.js';
-  ```
+    ```ts
+    import urlsManager from '../managers/urlsManager.js';
+    ```
 - Type imports use `.js` extension (same as regular imports):
-  ```ts
-  import { RequestUser } from '../types/auth.js';
-  import type { UserSelect } from '../types/user.js';
-  ```
-- Target: `es2020`, Module: `ESNext`, Module resolution: `node`.
+    ```ts
+    import { RequestUser } from '../types/auth.js';
+    import type { UserSelect } from '../types/user.js';
+    ```
+- Target: `es2022`, Module: `NodeNext`, Module resolution: `NodeNext`.
 
 ### Formatting
 
@@ -174,47 +188,47 @@ Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Schema**.
 
 ### Naming Conventions
 
-| Element           | Convention                     | Example                          |
-|-------------------|--------------------------------|----------------------------------|
-| Files             | camelCase                      | `urlsController.ts`              |
-| Types             | PascalCase                     | `UserSelect`, `UserPublic`       |
-| Manager classes   | camelCase (project convention) | `class usersManager`             |
-| Functions         | camelCase                      | `registerUser`, `getAllUrls`      |
-| Constants         | SCREAMING_SNAKE_CASE           | `SHORTIDLENGTH`                  |
-| Variables         | camelCase                      | `urlEntry`, `hashedPassword`     |
-| Router variables  | `router`                       | `const router = express.Router()`|
+| Element          | Convention                     | Example                           |
+| ---------------- | ------------------------------ | --------------------------------- |
+| Files            | camelCase                      | `urlsController.ts`               |
+| Types            | PascalCase                     | `UserSelect`, `UserPublic`        |
+| Manager classes  | camelCase (project convention) | `class usersManager`              |
+| Functions        | camelCase                      | `registerUser`, `getAllUrls`      |
+| Constants        | SCREAMING_SNAKE_CASE           | `SHORTIDLENGTH`                   |
+| Variables        | camelCase                      | `urlEntry`, `hashedPassword`      |
+| Router variables | `router`                       | `const router = express.Router()` |
 
 ### Export Patterns
 
 - **Controllers:** Default export of an object with named function properties:
-  ```ts
-  export default { registerUser, getUser, deleteUser, updateUser };
-  ```
+    ```ts
+    export default { registerUser, getUser, deleteUser, updateUser };
+    ```
 - **Managers:** Default export of the class:
-  ```ts
-  export default usersManager;
-  ```
+    ```ts
+    export default usersManager;
+    ```
 - **Middleware:** Default export of the function.
 - **Routes:** Default export of the router.
 - **Helpers/Validation:** Named exports:
-  ```ts
-  export function validateUser(...) { ... }
-  ```
+    ```ts
+    export function validateUser(...) { ... }
+    ```
 - **Types:** Named exports from regular `.ts` files (not `.d.ts`):
-  ```ts
-  export type UserSelect = typeof users.$inferSelect;
-  ```
+    ```ts
+    export type UserSelect = typeof users.$inferSelect;
+    ```
 
 ### Error Handling
 
 - Every async controller function uses **try/catch**.
 - Errors are logged with `console.error(error)`.
 - HTTP error responses use **plain text strings** (not JSON):
-  ```ts
-  res.status(400).send('Invalid request body');
-  res.status(404).send('Resource not found');
-  res.status(500).send('Server error');
-  ```
+    ```ts
+    res.status(400).send('Invalid request body');
+    res.status(404).send('Resource not found');
+    res.status(500).send('Server error');
+    ```
 - No custom error classes or centralized error middleware — errors are handled inline.
 - Common status codes: `200`, `201`, `204`, `400`, `401`, `404`, `500`.
 
@@ -222,31 +236,31 @@ Layered MVC-like pattern: **Routes -> Controllers -> Managers -> Schema**.
 
 - Domain types live in `src/types/` split by domain: `user.ts`, `url.ts`, `auth.ts`.
 - Types are derived from the Drizzle schema using `$inferSelect` / `$inferInsert` to stay automatically in sync with schema changes:
-  ```ts
-  export type UserSelect = typeof users.$inferSelect;
-  export type UserPublic = Omit<UserSelect, 'hashedPassword'>;
-  ```
+    ```ts
+    export type UserSelect = typeof users.$inferSelect;
+    export type UserPublic = Omit<UserSelect, 'hashedPassword'>;
+    ```
 - JWT-authenticated request user is accessed via type assertion:
-  ```ts
-  (req as Request & RequestUser).user.id
-  ```
+    ```ts
+    (req as Request & RequestUser).user.id;
+    ```
 - Environment variables are cast with `as string`:
-  ```ts
-  process.env.JWT_SECRET as string
-  ```
+    ```ts
+    process.env.JWT_SECRET as string;
+    ```
 - Joi is used for runtime request body validation alongside TypeScript types.
 
 ## Environment Variables
 
 Required (loaded via `dotenv`):
 
-| Variable       | Description                                    |
-|----------------|------------------------------------------------|
-| `PORT`         | Server port (Dockerfile exposes 4242)          |
-| `CORS_ORIGIN`  | Allowed CORS origin                            |
-| `DATABASE_URL` | PostgreSQL connection string                   |
-| `JWT_SECRET`   | Secret key for JWT signing                     |
-| `URL_BASE`     | Base URL for constructing short URLs           |
+| Variable       | Description                           |
+| -------------- | ------------------------------------- |
+| `PORT`         | Server port (Dockerfile exposes 4242) |
+| `CORS_ORIGIN`  | Allowed CORS origin                   |
+| `DATABASE_URL` | PostgreSQL connection string          |
+| `JWT_SECRET`   | Secret key for JWT signing            |
+| `URL_BASE`     | Base URL for constructing short URLs  |
 
 Copy `.env.example` to `.env` and fill in your values before running the server.
 
@@ -255,7 +269,7 @@ Copy `.env.example` to `.env` and fill in your values before running the server.
 ## Dependencies
 
 **Runtime:** express (v5), drizzle-orm, postgres, cors, dotenv, bcrypt, jsonwebtoken, joi, nanoid (v5, ESM-only).
-**Dev:** typescript (v5), tsx (watch mode / HMR), drizzle-kit, vitest, supertest, @types/node, @types/express, @types/bcrypt, @types/cors, @types/jsonwebtoken, @types/supertest.
+**Dev:** typescript (v5), tsx (watch mode / HMR), drizzle-kit, vitest, supertest, eslint, typescript-eslint, prettier, @types/node, @types/express, @types/bcrypt, @types/cors, @types/jsonwebtoken, @types/supertest.
 
 ### Express 5 Notes
 
@@ -271,4 +285,4 @@ docker build -t pico-url-backend .
 docker run -p 4242:4242 --env-file .env pico-url-backend
 ```
 
-Base image: `node:18`. Build runs `npm install` then `npm run build`. Entry: `node dist/server.js`.
+Base image: `node:24`. Build runs `npm install` then `npm run build`. Entry: `node dist/server.js`.
