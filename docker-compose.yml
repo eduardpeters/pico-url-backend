@@ -2,6 +2,7 @@ services:
     db:
         image: postgres:17
         environment:
+            # Example values — replace with your own credentials in production
             POSTGRES_DB: picodb
             POSTGRES_USER: pico
             POSTGRES_PASSWORD: pico
@@ -16,6 +17,7 @@ services:
     db-test:
         image: postgres:17
         environment:
+            # Example values — replace with your own credentials in production
             POSTGRES_DB: picodb_test
             POSTGRES_USER: pico
             POSTGRES_PASSWORD: pico
@@ -31,3 +33,7 @@ services:
                 condition: service_healthy
         env_file:
             - .env
+        environment:
+            # Must match the db service credentials and use the service name as host
+            # Example: postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@db:5432/<POSTGRES_DB>
+            DATABASE_URL: postgresql://pico:pico@db:5432/picodb
